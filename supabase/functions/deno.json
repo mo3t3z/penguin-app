@@ -1,0 +1,5 @@
+{
+  "compilerOptions": { "strict": true, "lib": ["deno.ns", "dom", "dom.iterable", "esnext"] },
+  "lock": true,
+  "tasks": { "check": "deno check post-media/index.ts" }
+}

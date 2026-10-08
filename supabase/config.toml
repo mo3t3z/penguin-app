@@ -1,0 +1,7 @@
+# Local configuration only. Nothing is deployed by creating this file.
+project_id = "penguin"
+
+[functions.post-media]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/post-media/index.ts"

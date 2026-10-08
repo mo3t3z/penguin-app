@@ -1,0 +1,121 @@
+import { useState } from 'react';
+import { Link } from 'expo-router';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowLeft, ArrowUpRight, Feather, Moon, Sun, Monitor } from 'lucide-react-native';
+import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FormField } from '@/components/ui/form-field';
+import { Icon } from '@/components/ui/icon';
+import { usePenguinTheme } from '@/theme/provider';
+import { colors, avatarSizes } from '@/theme/tokens';
+
+function Section({ number, title, children }: React.PropsWithChildren<{ number: string; title: string }>) {
+  return <View className="gap-5">
+    <View className="flex-row items-center gap-3"><Text variant="caption" className="text-primary">{number}</Text><Text variant="h3">{title}</Text></View>
+    {children}
+  </View>;
+}
+
+export default function ComponentGallery() {
+  const { preference, scheme, setPreference } = usePenguinTheme();
+  const [name, setName] = useState('');
+  const [checked, setChecked] = useState(false);
+  const [presses, setPresses] = useState(0);
+  const palette = colors[scheme];
+  return <SafeAreaView className="flex-1 bg-background">
+    <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="items-center px-4 py-6">
+        <View className="w-full max-w-2xl gap-10">
+          <View className="flex-row items-center justify-between">
+            <Link href="/" asChild><Button variant="ghost" size="icon" accessibilityLabel="Back to foundation"><Icon as={ArrowLeft} /></Button></Link>
+            <Text variant="small" className="tracking-widest">PENGUIN / STUDIO</Text>
+            <Icon as={Feather} color="primary" size={24} />
+          </View>
+          <View className="gap-4">
+            <View className="self-start"><Badge variant="campus"><Text>SPRINT 0 · UI FOUNDATION</Text></Badge></View>
+            <Text variant="h1">Made for{'\n'}what’s next.</Text>
+            <Text variant="lead">Ink. Snow. Glacier. A quieter canvas for bright minds and shared momentum.</Text>
+          </View>
+          <View className="gap-3">
+            <Text variant="small">Appearance</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {(['light', 'dark', 'system'] as const).map(mode => <Button key={mode}
+                variant={preference === mode ? 'default' : 'outline'}
+                accessibilityState={{ selected: preference === mode }} onPress={() => setPreference(mode)}>
+                <Icon as={mode === 'light' ? Sun : mode === 'dark' ? Moon : Monitor} color={preference === mode ? 'primary-foreground' : 'foreground'} />
+                <Text>{mode[0].toUpperCase() + mode.slice(1)}</Text>
+              </Button>)}
+            </View>
+            <Text variant="muted">{preference === 'system' ? 'Following your device' : 'Manual appearance'} · {scheme} palette</Text>
+          </View>
+          <Separator />
+          <Section number="01" title="The palette">
+            <View className="flex-row flex-wrap gap-3">
+              {(['foreground', 'background', 'primary', 'accent', 'muted'] as const).map(token => <View key={token} className="gap-2" style={{ width: 100 }}>
+                <View className="h-20 rounded-lg border border-border" style={{ backgroundColor: palette[token] }} />
+                <Text variant="caption">{token}</Text><Text variant="caption" className="text-muted-foreground">{palette[token]}</Text>
+              </View>)}
+            </View>
+          </Section>
+          <Section number="02" title="Words with room">
+            <Text variant="h1">Big ideas.</Text><Text variant="h2">Small beginnings.</Text>
+            <Text variant="h3">Space to belong.</Text><Text variant="lead">A little curiosity goes a long way.</Text>
+            <Text>Body · 16/24. Clear, comfortable reading for everyday conversations.</Text>
+            <Text variant="muted">Metadata · 14/20. Supporting context.</Text><Text variant="caption">Caption · 12/16. The small details.</Text>
+          </Section>
+          <Section number="03" title="Every action, considered">
+            <View className="flex-row flex-wrap gap-3">
+              {(['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] as const).map(variant => <Button key={variant} variant={variant} onPress={() => setPresses(value => value + 1)}><Text>{variant === 'default' ? 'Primary' : variant}</Text></Button>)}
+              <Button disabled><Text>Disabled</Text></Button><Button loading accessibilityLabel="Loading preview"><Text>Loading</Text></Button>
+              <Button size="icon" accessibilityLabel="Try icon button" onPress={() => setPresses(value => value + 1)}><Icon as={ArrowUpRight} color="primary-foreground" /></Button>
+            </View>
+            <View className="flex-row flex-wrap gap-3">{(['sm','default','lg'] as const).map(size => <Button key={size} size={size} variant="outline" onPress={() => setPresses(value => value + 1)}><Text>{size}</Text></Button>)}</View>
+            <Text variant="muted" accessibilityLiveRegion="polite">Button presses: {presses}</Text>
+          </Section>
+          <Section number="04" title="A clear place to start">
+            <FormField label="Display name" required placeholder="Your name" hint="Choose a name people recognize." value={name} onChangeText={setName} error={checked && !name.trim() ? 'Enter a display name to continue.' : undefined} />
+            <Button variant="secondary" onPress={() => setChecked(true)}><Text>Check field</Text></Button>
+            {checked && name.trim() ? <Text className="text-success" accessibilityLiveRegion="polite">Looks good. This is only a UI demo.</Text> : null}
+            <Input variant="search" placeholder="Search preview" accessibilityLabel="Search preview" />
+            <FormField label="A few words" variant="multiline" placeholder="Let an idea take shape…" />
+            <FormField label="Unavailable" value="Disabled input" editable={false} />
+            <FormField label="Read only" value="Readable, not editable" readOnly />
+          </Section>
+          <Section number="05" title="Room for context">
+            {(['surface','outlined','muted','highlighted'] as const).map(variant => <Card key={variant} variant={variant}>
+              <CardHeader><CardTitle>{variant[0].toUpperCase() + variant.slice(1)} card</CardTitle><CardDescription>Generous spacing. A clear hierarchy.</CardDescription></CardHeader>
+              <CardContent><Text>Reusable structure, with Penguin’s own character.</Text></CardContent>
+            </Card>)}
+          </Section>
+          <Section number="06" title="People & little details">
+            <View className="flex-row flex-wrap items-center gap-4">
+              {(Object.keys(avatarSizes) as (keyof typeof avatarSizes)[]).map(size => <View key={size} className="items-center gap-2">
+                <Avatar size={size} alt={`${size} avatar preview`}><AvatarFallback><Text variant={size === 'xs' ? 'caption' : 'small'}>PN</Text></AvatarFallback></Avatar>
+                <Text variant="caption">{avatarSizes[size]}</Text>
+              </View>)}
+              <Avatar alt="Local image preview" size="xl"><AvatarImage source={require('../../assets/icon.png')} /><AvatarFallback><Text>PN</Text></AvatarFallback></Avatar>
+            </View>
+            <View className="flex-row flex-wrap gap-2">{(['secondary','campus','subject','success','warning','destructive','outline'] as const).map(variant => <Badge key={variant} variant={variant}><Text>{variant === 'secondary' ? 'Neutral' : variant}</Text></Badge>)}</View>
+            <Separator />
+            <View className="flex-row items-center gap-4" style={{ height: 28 }}><Text variant="small">One</Text><Separator orientation="vertical" /><Text variant="small">Another</Text></View>
+          </Section>
+          <Section number="07" title="Good things take a moment">
+            <View accessibilityLabel="Loading preview" accessibilityState={{ busy: true }} className="gap-4 rounded-lg border border-border p-5">
+              <View className="flex-row items-center gap-3"><Skeleton className="h-12 w-12 rounded-full" /><View className="flex-1 gap-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-24" /></View></View>
+              <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4" />
+            </View>
+            <Text variant="muted">Quiet, static placeholders. No unnecessary motion.</Text>
+          </Section>
+          <Separator /><Text variant="caption" className="text-muted-foreground">PENGUIN · DEVELOPMENT GALLERY · FOUNDATION BEFORE FEATURES</Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  </SafeAreaView>;
+}
