@@ -1,5 +1,5 @@
 import type { UploadAuthorization, UploadStatus } from './media-service';
-import { authorizationValidation, mediaFailureFromCause } from './media-diagnostics';
+import { authorizationValidation, mediaFailureFromCause } from './media-diagnostics.ts';
 import type { SelectedPostImage, UploadReadyPostImage } from './selected-media';
 
 export type PublishProgress =

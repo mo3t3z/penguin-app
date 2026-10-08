@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createImagePublishRecovery, ImagePublishError, publishPost } from '../src/features/posts/publish-flow.ts';
 
+globalThis.__DEV__ = false;
+
 function image(id) {
   return {
     id,
