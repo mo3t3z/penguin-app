@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { router } from 'expo-router';
 import { FlatList, View, type ListRenderItem, type ViewToken } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,7 +48,7 @@ export function FeedList({ header }: { header?: ReactElement }) {
   const userId = session?.user.id ?? null;
   const {
     status, items, nextCursor, loadingMore, error, errorKind,
-    refresh: refreshFeed, loadMore: loadMoreFeed,
+    likesByPostId, commentCountsByPostId, refresh: refreshFeed, loadMore: loadMoreFeed, toggleLike,
   } = usePostsFeed();
   const [refreshing, setRefreshing] = useState(false);
   const [visiblePostIds, setVisiblePostIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -68,9 +69,23 @@ export function FeedList({ header }: { header?: ReactElement }) {
   const loadMore = useCallback(() => {
     if (nextCursor && !loadingMore) void loadMoreFeed();
   }, [loadMoreFeed, loadingMore, nextCursor]);
+  const openComments = useCallback((postId: string) => {
+    router.push({ pathname: '/comments/[postId]', params: { postId } });
+  }, []);
   const renderPost = useCallback<ListRenderItem<FeedPost>>(({ item }) => <View className="mb-4 w-full max-w-lg self-center">
-    <PostCard post={item} visible={visiblePostIds.has(item.id)} />
-  </View>, [visiblePostIds]);
+    <PostCard
+      post={item}
+      visible={visiblePostIds.has(item.id)}
+      likeState={likesByPostId[item.id]}
+      commentCount={commentCountsByPostId[item.id]}
+      onToggleLike={toggleLike}
+      onOpenComments={openComments}
+    />
+  </View>, [commentCountsByPostId, likesByPostId, openComments, toggleLike, visiblePostIds]);
+  const extraData = useMemo(
+    () => ({ commentCountsByPostId, likesByPostId, visiblePostIds }),
+    [commentCountsByPostId, likesByPostId, visiblePostIds],
+  );
 
   const initialLoading = status === 'idle' || status === 'loading';
   const empty = initialLoading ? <FeedSkeleton />
@@ -95,7 +110,7 @@ export function FeedList({ header }: { header?: ReactElement }) {
     contentContainerClassName="px-4 pb-10"
     data={items}
     renderItem={renderPost}
-    extraData={visiblePostIds}
+    extraData={extraData}
     keyExtractor={keyExtractor}
     ListHeaderComponent={header ?? null}
     ListHeaderComponentStyle={{ marginBottom: 16 }}

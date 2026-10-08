@@ -32,6 +32,26 @@ export type PostMediaRecord = {
   size_bytes: number; width: number | null; height: number | null; position: number;
   created_at: string; updated_at: string;
 };
+export type PostLike = {
+  post_id: string;
+  user_id: string;
+  created_at: string;
+};
+export type PostLikeSummary = {
+  post_id: string;
+  like_count: number;
+  liked_by_me: boolean;
+};
+export type PostComment = {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
+export type PostCommentCreateResult = PostComment & { idempotent_replay: boolean };
+export type PostCommentCount = { post_id: string; comment_count: number };
 
 export type Database = {
   public: {
@@ -50,6 +70,24 @@ export type Database = {
         Update: Partial<PostMediaRecord>;
         Relationships: [
           { foreignKeyName: 'post_media_post_id_fkey'; columns: ['post_id']; isOneToOne: false; referencedRelation: 'posts'; referencedColumns: ['id'] },
+        ];
+      };
+      post_likes: {
+        Row: PostLike;
+        Insert: Pick<PostLike, 'post_id'> & Partial<Pick<PostLike, 'user_id' | 'created_at'>>;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'post_likes_post_id_fkey'; columns: ['post_id']; isOneToOne: false; referencedRelation: 'posts'; referencedColumns: ['id'] },
+          { foreignKeyName: 'post_likes_user_id_fkey'; columns: ['user_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ];
+      };
+      post_comments: {
+        Row: PostComment;
+        Insert: Pick<PostComment, 'post_id' | 'content'> & Partial<Pick<PostComment, 'id' | 'author_id' | 'created_at' | 'updated_at'>>;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'post_comments_post_id_fkey'; columns: ['post_id']; isOneToOne: false; referencedRelation: 'posts'; referencedColumns: ['id'] },
+          { foreignKeyName: 'post_comments_author_id_fkey'; columns: ['author_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
         ];
       };
 
@@ -80,6 +118,18 @@ export type Database = {
       create_post_idempotent: {
         Args: { p_content: string; p_client_request_id: string };
         Returns: (Post & { idempotent_replay: boolean })[];
+      };
+      get_post_like_summaries: {
+        Args: { p_post_ids: string[] };
+        Returns: PostLikeSummary[];
+      };
+      create_post_comment_idempotent: {
+        Args: { p_comment_id: string; p_post_id: string; p_content: string };
+        Returns: PostCommentCreateResult[];
+      };
+      get_post_comment_counts: {
+        Args: { p_post_ids: string[] };
+        Returns: PostCommentCount[];
       };
     };
     Enums: { [_ in never]: never };

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
   beginFeedLoad,
@@ -13,6 +14,15 @@ import {
 import { feedCursorFilter } from '../src/features/posts/validation.ts';
 
 const author = { id: '00000000-0000-4000-8000-000000000090', username: 'student', display_name: 'Student', avatar_url: null };
+
+test('protected feed and comments routes share a stack that preserves the covered feed screen', () => {
+  const layout = readFileSync(new URL('../src/app/(protected)/_layout.tsx', import.meta.url), 'utf8');
+  const feed = readFileSync(new URL('../src/features/posts/feed-list.tsx', import.meta.url), 'utf8');
+  assert.match(layout, /import\s*\{\s*Stack\s*\}\s*from\s*['"]expo-router['"]/);
+  assert.match(layout, /<Stack\b/);
+  assert.doesNotMatch(layout, /\bSlot\b/);
+  assert.doesNotMatch(feed, /useFocusEffect|addListener\s*\(\s*['"]focus['"]/);
+});
 function post(id, createdAt, media = []) {
   return { id, author_id: author.id, content: id, created_at: createdAt, updated_at: createdAt, author, media };
 }
@@ -70,6 +80,20 @@ test('refresh keeps existing same-account posts mounted while loading', () => {
   assert.equal(loading.status, 'ready');
   assert.strictEqual(loading.items, current.items);
   assert.equal(loading.loadingMore, false);
+});
+
+test('switching accounts clears feed comment counts', () => {
+  const current = {
+    ...initialFeedState(),
+    userId: author.id,
+    status: 'ready',
+    items: [post('00000000-0000-4000-8000-000000000001', '2026-10-08T10:00:00Z')],
+    commentCountsByPostId: {
+      '00000000-0000-4000-8000-000000000001': { count: 3, error: null },
+    },
+  };
+  const switched = beginFeedLoad(current, '00000000-0000-4000-8000-000000000099', false);
+  assert.deepEqual(switched.commentCountsByPostId, {});
 });
 
 test('offline refresh retains posts and becomes a non-blocking refresh error', () => {

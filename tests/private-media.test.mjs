@@ -41,6 +41,16 @@ test('memory cache reuses valid URLs for unchanged media and drops expired entri
   assert.equal(cache.get('user-a', 'media-a', now + 300_000), null);
 });
 
+test('repeated comments navigation can reuse the same valid in-memory URL', () => {
+  const cache = new SignedMediaMemoryCache();
+  const value = { url: 'https://example.test/signed', expiresAt: now + 300_000 };
+  cache.activateUser('user-a');
+  cache.set('user-a', 'media-a', value);
+  for (let returnCount = 0; returnCount < 10; returnCount += 1) {
+    assert.strictEqual(cache.get('user-a', 'media-a', now + returnCount), value);
+  }
+});
+
 test('memory cache clears URLs when the authenticated account changes', () => {
   const cache = new SignedMediaMemoryCache();
   const value = { url: 'https://example.test/signed', expiresAt: now + 300_000 };

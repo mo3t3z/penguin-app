@@ -1,4 +1,6 @@
 import type { Post, PostMediaRecord, Profile } from '../../lib/database.types';
+import type { PostLikesById } from './likes';
+import type { CommentCountsByPostId } from '../comments/comment-counts';
 
 export type FeedAuthor = Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url'>;
 export type FeedMedia = Pick<PostMediaRecord,
@@ -19,6 +21,8 @@ export type FeedState = {
   loadingMore: boolean;
   error: string | null;
   errorKind: FeedErrorKind;
+  likesByPostId: PostLikesById;
+  commentCountsByPostId: CommentCountsByPostId;
 };
 
 export const initialFeedState = (): FeedState => ({
@@ -29,13 +33,15 @@ export const initialFeedState = (): FeedState => ({
   loadingMore: false,
   error: null,
   errorKind: null,
+  likesByPostId: {},
+  commentCountsByPostId: {},
 });
 
 export function beginFeedLoad(current: FeedState, userId: string, append: boolean): FeedState {
   if (current.userId === userId && current.items.length) {
     return { ...current, status: 'ready', loadingMore: append, error: null, errorKind: null };
   }
-  return { userId, status: 'loading', items: [], nextCursor: null, loadingMore: false, error: null, errorKind: null };
+  return { ...initialFeedState(), userId, status: 'loading' };
 }
 
 export function failFeedLoad(
@@ -61,6 +67,8 @@ export function failFeedLoad(
     loadingMore: false,
     error: message,
     errorKind: append ? 'load-more' : 'refresh',
+    likesByPostId: {},
+    commentCountsByPostId: {},
   };
 }
 

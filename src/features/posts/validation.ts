@@ -7,6 +7,16 @@ export function requireUuid(value: string): string {
   if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) throw new Error('Invalid post/media identifier.');
   return value.toLowerCase();
 }
+export function postLikeSummaryIds(values: readonly string[]) {
+  if (!Array.isArray(values)) throw new Error('Post identifiers must be an array.');
+  const unique = [...new Set(values.map(requireUuid))];
+  if (unique.length > 50) throw new Error('At most 50 post identifiers are allowed.');
+  return unique;
+}
+export function isDuplicateLikeError(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error
+    && (error as { code?: unknown }).code === '23505';
+}
 export function normalizePostContent(content: string): string {
   if (typeof content !== 'string') throw new Error('Post content must be text.');
   const value = content.trim();
