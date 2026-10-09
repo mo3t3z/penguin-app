@@ -65,3 +65,34 @@ Nothing in this sprint has been run on a device yet.
 - [ ] DEFERRED: Log out and log in as another account; both scopes are empty.
 - [ ] DEFERRED: Dragging post results dismisses the keyboard; nothing sits under the gesture bar.
 - [ ] DEFERRED: Light and dark mode are both legible; TalkBack announces the tabs and their selected state.
+
+## Sprint 6A: private chat foundation
+
+Nothing in this sprint has been run on a device, and the chat migration must be applied
+to the development project before any of it can be.
+
+- [ ] DEFERRED: The mail button on Home opens Messages above the tabs; back returns to Home with its scroll position.
+- [ ] DEFERRED: With no conversations, Messages shows "No messages yet" and "Find students" opens Discover.
+- [ ] DEFERRED: Another student's profile shows Message; your own profile does not.
+- [ ] DEFERRED: Tapping Message opens the conversation; tapping it twice quickly opens it once.
+- [ ] DEFERRED: Tapping Message again later opens the same conversation with its history.
+- [ ] DEFERRED: A new conversation shows "No messages yet" and the composer.
+- [ ] DEFERRED: A sent message appears at once as "Sending…" and then shows its time.
+- [ ] DEFERRED: After reopening the conversation on the other account, the message is there on the left.
+- [ ] DEFERRED: Incoming and outgoing bubbles, times and "Today"/"Yesterday" separators look right in light and dark mode.
+- [ ] DEFERRED: With more than 30 messages, scrolling up loads earlier messages with no duplicates or jumps.
+- [ ] DEFERRED: In airplane mode a message shows "Not sent" with Retry; Retry after reconnecting sends it once.
+- [ ] DEFERRED: A blank message cannot be sent; text stops at 2,000 characters.
+- [ ] DEFERRED: Sending more than 30 messages in a minute shows the "sending quickly" notice and the extra message can be retried later.
+- [ ] DEFERRED: The Messages list shows the other student, the last message ("You: …" for your own) and its time, newest conversation first.
+- [ ] DEFERRED: Returning from a conversation to Messages shows the updated preview; pull to refresh works.
+- [ ] DEFERRED: Blocking from the conversation asks for confirmation, then replaces the composer with the Unblock notice.
+- [ ] DEFERRED: While blocked, the other account's send fails with the neutral notice and history stays readable on both sides.
+- [ ] DEFERRED: Unblock restores the composer and sends nothing; both accounts can send again.
+- [ ] DEFERRED: A blocked student tapping Message on the blocker's profile (with no existing conversation) sees "You can't message this student right now."
+- [ ] DEFERRED: After the other account is deleted, the conversation shows "Deleted Student", keeps its messages and has no composer.
+- [ ] DEFERRED: A third account sees none of these conversations.
+- [ ] DEFERRED: Log out and log in as another account; Messages shows only that account's conversations.
+- [ ] DEFERRED: The keyboard does not cover the composer; the list stays at the newest message while typing.
+- [ ] DEFERRED: Android back from a conversation returns to where it was opened (Messages or the profile).
+- [ ] DEFERRED: TalkBack announces bubbles with author and status, the send button, Retry and the block control.

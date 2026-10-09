@@ -163,7 +163,11 @@ test('joined label uses the real profile creation month and tolerates bad input'
 test('a student profile is read-only and edit actions exist only on the Profile tab', () => {
   const route = read('../src/app/(protected)/students/[id].tsx');
   assert.match(route, /own=\{false\}/);
-  assert.doesNotMatch(route, /edit-profile|signOut|actions=/);
+  assert.doesNotMatch(route, /edit-profile|signOut|Log out|Edit Profile/);
+  // Message is the single action a student profile offers, and not on your own.
+  assert.deepEqual(route.match(/actions=\{.*/g), [
+    'actions={profile.id === viewerId ? undefined : <MessageStudentButton studentId={profile.id} />}',
+  ]);
   assert.match(route, /uuidPattern\.test\(params\.id\)/);
   const account = read('../src/app/(protected)/(tabs)/account.tsx');
   assert.match(account, /href="\/edit-profile"/);

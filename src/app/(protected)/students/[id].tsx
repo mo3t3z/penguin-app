@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBar } from '@/components/navigation/top-bar';
 import { StatePanel } from '@/components/social/state-panel';
 import { useAuth } from '@/features/auth/provider';
+import { MessageStudentButton } from '@/features/chat/message-student-button';
 import { ProfileScreen } from '@/features/profile/profile-screen';
 import { ProfileSkeleton } from '@/features/profile/profile-skeleton';
 import type { PublicProfile } from '@/features/profile/service';
@@ -20,9 +21,11 @@ function goBack() {
 function StudentProfile({ profile, viewerId }: { profile: PublicProfile; viewerId: string }) {
   const references = useProfileReferences(viewerId, profile.institution_id, profile.field_id);
   // Read-only: no edit or account actions are offered here, even for your own id.
+  // The only action is Message, and never for your own profile.
   return <ProfileScreen
     profile={profile}
     own={false}
+    actions={profile.id === viewerId ? undefined : <MessageStudentButton studentId={profile.id} />}
     onBack={goBack}
     studies={{
       loading: references.loading, failed: references.failed, retry: references.retry,

@@ -52,6 +52,28 @@ export type PostComment = {
 };
 export type PostCommentCreateResult = PostComment & { idempotent_replay: boolean };
 export type PostCommentCount = { post_id: string; comment_count: number };
+// A participant column is null once that student has deleted their account.
+export type Conversation = {
+  id: string;
+  user_low: string | null;
+  user_high: string | null;
+  created_by: string | null;
+  created_at: string;
+  last_message_at: string | null;
+  last_message_sender_id: string | null;
+  last_message_preview: string | null;
+};
+// sender_id is null when the sender has deleted their account.
+export type Message = {
+  id: string;
+  conversation_id: string;
+  sender_id: string | null;
+  content: string;
+  created_at: string;
+};
+export type MessageSendResult = Message & { idempotent_replay: boolean };
+export type ConversationRead = { conversation_id: string; user_id: string; last_read_at: string };
+export type UserBlock = { blocker_id: string; blocked_id: string; created_at: string };
 
 export type Database = {
   public: {
@@ -91,6 +113,40 @@ export type Database = {
         ];
       };
 
+      conversations: {
+        Row: Conversation;
+        Insert: never;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'conversations_user_low_fkey'; columns: ['user_low']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+          { foreignKeyName: 'conversations_user_high_fkey'; columns: ['user_high']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ];
+      };
+      messages: {
+        Row: Message;
+        Insert: never;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'messages_conversation_id_fkey'; columns: ['conversation_id']; isOneToOne: false; referencedRelation: 'conversations'; referencedColumns: ['id'] },
+          { foreignKeyName: 'messages_sender_id_fkey'; columns: ['sender_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ];
+      };
+      conversation_reads: {
+        Row: ConversationRead;
+        Insert: never;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'conversation_reads_conversation_id_fkey'; columns: ['conversation_id']; isOneToOne: false; referencedRelation: 'conversations'; referencedColumns: ['id'] },
+        ];
+      };
+      user_blocks: {
+        Row: UserBlock;
+        Insert: never;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'user_blocks_blocked_id_fkey'; columns: ['blocked_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ];
+      };
       profiles: {
         Row: Profile;
         Insert: Pick<Profile, 'id'> & Partial<Omit<Profile, 'id'>>;
@@ -131,6 +187,17 @@ export type Database = {
         Args: { p_post_ids: string[] };
         Returns: PostCommentCount[];
       };
+      get_or_create_conversation: {
+        Args: { p_other_user_id: string };
+        Returns: string;
+      };
+      send_message_idempotent: {
+        Args: { p_message_id: string; p_conversation_id: string; p_content: string };
+        Returns: MessageSendResult[];
+      };
+      block_user: { Args: { p_blocked_id: string }; Returns: undefined };
+      unblock_user: { Args: { p_blocked_id: string }; Returns: undefined };
+      mark_conversation_read: { Args: { p_conversation_id: string }; Returns: undefined };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

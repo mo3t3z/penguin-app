@@ -1,11 +1,12 @@
 import { useCallback, useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import { Link, router } from 'expo-router';
-import { SquarePen } from 'lucide-react-native';
+import { Mail, SquarePen } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBar } from '@/components/navigation/top-bar';
 import { UserAvatar } from '@/components/social/user-avatar';
 import { Icon } from '@/components/ui/icon';
+import { IconButton } from '@/components/ui/icon-button';
 import { Text } from '@/components/ui/text';
 import { FeedList } from '@/features/posts/feed-list';
 import { ProfileStatus } from '@/features/profile/profile-status';
@@ -40,6 +41,7 @@ function FeedIntroduction({ profile }: { profile: Profile }) {
 
 function HomeFeed({ profile }: { profile: Profile }) {
   const lastOpened = useRef(0);
+  const lastMessagesOpened = useRef(0);
   // Your own posts lead to the Profile tab; another student's open a profile
   // screen above the tabs, so Home stays mounted underneath.
   const openAuthor = useCallback((authorId: string) => {
@@ -49,8 +51,15 @@ function HomeFeed({ profile }: { profile: Profile }) {
     lastOpened.current = now;
     router.push({ pathname: '/students/[id]', params: { id: authorId } });
   }, [profile.id]);
+  // Figma Home top bar: the mail button opens Messages above the tabs.
+  const openMessages = useCallback(() => {
+    const now = Date.now();
+    if (now - lastMessagesOpened.current < OPEN_PROFILE_INTERVAL) return;
+    lastMessagesOpened.current = now;
+    router.push('/messages');
+  }, []);
   return <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-    <TopBar />
+    <TopBar actions={<IconButton icon={Mail} accessibilityLabel="Messages" onPress={openMessages} />} />
     <FeedList header={<FeedIntroduction profile={profile} />} onOpenAuthor={openAuthor} />
   </SafeAreaView>;
 }
