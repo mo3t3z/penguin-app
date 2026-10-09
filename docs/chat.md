@@ -12,7 +12,7 @@ no live delivery yet; that is Sprint 6B.
 | Hosted catalog verification | PASS on 2026-10-09 (details below) |
 | Hosted anonymous-access probes | PASS on 2026-10-09: reads of all four tables, all five client functions, one internal helper and a direct insert into `messages` were refused for the anonymous role |
 | Authenticated account tests on the hosted project | PENDING. Messaging between real accounts, third-account denial and blocking have not been exercised there |
-| Migration history | PENDING. Version `20261010120000` is not recorded in `supabase_migrations.schema_migrations`, because the SQL editor was used. Repair it before the next `supabase db push` (see below) |
+| Migration history | COMPLETE on 2026-10-09. Version `20261010120000` was recorded with the Supabase CLI repair, and all nine migrations match locally and remotely (see below) |
 | Android device acceptance | DEFERRED (see `docs/android-acceptance-checklist.md`) |
 
 Hosted catalog verification read these facts from the database itself:
@@ -27,16 +27,21 @@ Hosted catalog verification read these facts from the database itself:
 
 The project is on the Free plan and has no database backups.
 
-### Pending: migration history repair
+### Migration history repair (complete)
 
-Do not run the migration again; it would fail with "already exists". Record it instead,
-with the official CLI, from a machine that is logged in and linked to the project:
+Because the migration was run in the SQL editor, it was not recorded in
+`supabase_migrations.schema_migrations`. It was recorded afterwards with the official
+Supabase CLI (2.120.0), linked to `utdwgmvdhghmephbvxvj`, on 2026-10-09:
 
-1. `supabase migration list --linked` and confirm `20261010120000` has a LOCAL value and
-   an empty REMOTE value, and that the eight earlier versions appear in both columns.
-2. `supabase migration repair --status applied 20261010120000 --linked`. This inserts a
-   record in the history table and does not execute the migration.
-3. `supabase migration list --linked` again and confirm all nine versions match.
+1. `supabase migration list --linked` showed the eight earlier versions in both the
+   local and remote columns and `20261010120000` local-only, with no remote-only entries.
+2. `supabase migration repair --status applied 20261010120000 --linked` reported
+   "Repaired migration history: [20261010120000] => applied". The migration was not
+   executed again.
+3. `supabase migration list --linked` then showed all nine versions, `20261005023355`
+   through `20261010120000`, matching locally and remotely.
+
+Do not run the chat migration again on this project; it would fail with "already exists".
 
 ## What is included
 
