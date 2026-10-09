@@ -9,7 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import type { Profile, StudyLevel } from '@/lib/database.types';
 import { UsernameField } from '@/features/onboarding/username-field';
-import { SearchSelection, type Selection } from '@/features/onboarding/search-selection';
+import { SelectorSheet } from '@/components/sheets/selector-sheet';
+import type { Selection } from '@/features/onboarding/search-selection';
 import { useProfile } from './provider';
 import { studyLevels } from './study-levels';
 import { checkUsernameAvailability, isValidUsername, normalizeUsername, updateCurrentProfile } from './service';
@@ -97,11 +98,9 @@ function EditForm({ profile, initialInstitution, initialField }: {
     <Card><CardContent className="gap-4">
       <Text variant="h3">Your studies</Text>
       <Text variant="muted">Institution</Text><Text>{institution?.name ?? 'Choose an institution'}</Text>
-      <Button variant="outline" disabled={busy} onPress={() => setSelector(selector === 'institution' ? null : 'institution')}><Text>{selector === 'institution' ? 'Close institution search' : 'Change institution'}</Text></Button>
-      {selector === 'institution' ? <SearchSelection kind="institution" selected={institution} disabled={busy} onSelect={value => { setInstitution(value); setSelector(null); }} /> : null}
+      <Button variant="outline" disabled={busy} onPress={() => setSelector('institution')}><Text>Change institution</Text></Button>
       <Text variant="muted">Field of study</Text><Text>{field?.name ?? 'Choose a field of study'}</Text>
-      <Button variant="outline" disabled={busy} onPress={() => setSelector(selector === 'field' ? null : 'field')}><Text>{selector === 'field' ? 'Close field search' : 'Change field of study'}</Text></Button>
-      {selector === 'field' ? <SearchSelection kind="field" selected={field} disabled={busy} onSelect={value => { setField(value); setSelector(null); }} /> : null}
+      <Button variant="outline" disabled={busy} onPress={() => setSelector('field')}><Text>Change field of study</Text></Button>
       <Text variant="small">Study level *</Text>
       {(Object.entries(studyLevels) as [StudyLevel, string][]).map(([value, label]) => <Button key={value}
         disabled={busy} className="justify-start" variant={level === value ? 'secondary' : 'outline'}
@@ -113,6 +112,9 @@ function EditForm({ profile, initialInstitution, initialField }: {
     {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
     <Button loading={busy} onPress={() => void save()}><Text>{busy ? 'Saving changes…' : 'Save changes'}</Text></Button>
     <Button variant="ghost" disabled={busy} onPress={() => router.dismissTo('/account')}><Text>Cancel</Text></Button>
+    <SelectorSheet kind={selector ?? 'institution'} visible={selector !== null && !busy}
+      selected={selector === 'field' ? field : institution} onClose={() => setSelector(null)}
+      onConfirm={value => { if (selector === 'field') setField(value); else setInstitution(value); setSelector(null); }} />
   </Frame>;
 }
 

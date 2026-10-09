@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowUpRight, Bell, Moon, Sun, Monitor, Users } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpRight, Bell, Building2, GraduationCap, Mail, Moon, Sun, Monitor, Users } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,10 @@ import { BrandMark } from '@/components/brand-mark';
 import { IdentityRow } from '@/components/social/identity-row';
 import { StatePanel } from '@/components/social/state-panel';
 import { PostCard } from '@/features/posts/post-card';
+import { InfoRow } from '@/components/forms/info-row';
+import { SelectorOption } from '@/components/forms/selector-option';
+import { PasswordField } from '@/components/ui/password-field';
+import { OnboardingProgress } from '@/features/onboarding/progress';
 import type { FeedPost } from '@/features/posts/feed';
 import { usePenguinTheme } from '@/theme/provider';
 import { colors, avatarSizes } from '@/theme/tokens';
@@ -42,13 +46,16 @@ export default function ComponentGallery() {
   const [checked, setChecked] = useState(false);
   const [presses, setPresses] = useState(0);
   const [liked, setLiked] = useState(false);
+  const [option, setOption] = useState(0);
+  const [secret, setSecret] = useState('');
   const palette = colors[scheme];
   return <SafeAreaView className="flex-1 bg-background">
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="items-center px-4 py-6">
         <View className="w-full max-w-2xl gap-10">
           <View className="flex-row items-center justify-between">
-            <Link href="/" asChild><Button variant="ghost" size="icon" accessibilityLabel="Back to foundation"><Icon as={ArrowLeft} /></Button></Link>
+            <Button variant="ghost" size="icon" accessibilityLabel="Leave the gallery"
+              onPress={() => router.canGoBack() ? router.back() : router.replace('/')}><Icon as={ArrowLeft} /></Button>
             <BrandMark />
             <IconButton icon={Bell} accessibilityLabel="Icon button preview" onPress={() => setPresses(value => value + 1)} />
           </View>
@@ -101,6 +108,17 @@ export default function ComponentGallery() {
             <Button variant="secondary" onPress={() => setChecked(true)}><Text>Check field</Text></Button>
             {checked && name.trim() ? <Text className="text-success" accessibilityLiveRegion="polite">Looks good. This is only a UI demo.</Text> : null}
             <Input variant="search" placeholder="Search preview" accessibilityLabel="Search preview" />
+            <FormField label="Email address" leadingIcon={Mail} placeholder="you@university.edu" />
+            <PasswordField label="Password" placeholder="Enter your password" value={secret} onChangeText={setSecret} />
+            <OnboardingProgress step={2} />
+            <View className="gap-3" accessibilityRole="radiogroup">
+              {['Northbridge University', 'North Coast Institute'].map((title, index) => <SelectorOption key={title} icon={Building2}
+                title={title} detail={index === 0 ? 'Bristol, GB' : null} selected={option === index} onPress={() => setOption(index)} />)}
+            </View>
+            <Card variant="muted"><CardContent className="gap-4">
+              <InfoRow icon={Building2} label="Institution" value="Northbridge University" />
+              <InfoRow icon={GraduationCap} label="Study level" value="Undergraduate" onEdit={() => setPresses(value => value + 1)} />
+            </CardContent></Card>
             <FormField label="A few words" variant="multiline" placeholder="Let an idea take shape…" />
             <FormField label="Unavailable" value="Disabled input" editable={false} />
             <FormField label="Read only" value="Readable, not editable" readOnly />

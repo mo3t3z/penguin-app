@@ -2,7 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GraduationCap } from 'lucide-react-native';
+import { ArrowRight, BookOpen, Building2, Compass, GraduationCap, MessagesSquare, Users } from 'lucide-react-native';
+import { PenguinMark } from '@/components/brand-mark';
+import { InfoRow } from '@/components/forms/info-row';
+import { SelectorOption } from '@/components/forms/selector-option';
+import { TopBar } from '@/components/navigation/top-bar';
+import { IdentityRow } from '@/components/social/identity-row';
+import { UserAvatar } from '@/components/social/user-avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
@@ -12,18 +18,19 @@ import type { Profile, StudyLevel } from '@/lib/database.types';
 import { signOut } from '@/features/auth/service';
 import { useProfile } from '@/features/profile/provider';
 import { checkUsernameAvailability, isValidUsername, normalizeUsername, updateCurrentProfile } from '@/features/profile/service';
+import { OnboardingProgress } from './progress';
 import { SearchSelection, type Selection } from './search-selection';
+import {
+  canContinueStep,
+  isValidDisplayName,
+  onboardingSteps,
+  previousStep,
+  primaryActionLabel,
+  REVIEW_STEP,
+  stepRequirementError,
+} from './steps';
 import { UsernameField } from './username-field';
 import { studyLevels } from '@/features/profile/study-levels';
-
-const steps = [
-  { title: 'Your people. Your next chapter.', description: 'Welcome to Penguin. A few details will help you find your place in the student community.' },
-  { title: 'Start with you.', description: 'Choose the name your fellow students will see.' },
-  { title: 'Where do you study?', description: 'Find your university, school or institute.' },
-  { title: 'What are you studying?', description: 'Choose the area closest to your program.' },
-  { title: 'Where are you in your journey?', description: 'Choose your current study level.' },
-  { title: 'Looks like you.', description: 'One last look before you join Penguin.' },
-];
 
 function saveError(cause: unknown) {
   const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : null;
@@ -47,7 +54,8 @@ export function OnboardingScreen({ profile }: { profile: Profile }) {
   const inFlight = useRef(false);
   const scroll = useRef<ScrollView>(null);
   const canonical = normalizeUsername(username);
-  const validName = [...displayName.trim()].length > 0 && [...displayName.trim()].length <= 80;
+  const validName = isValidDisplayName(displayName);
+  const selections = { institution, field, level };
 
   const move = useCallback((next: number) => {
     if (inFlight.current) return;
@@ -57,7 +65,8 @@ export function OnboardingScreen({ profile }: { profile: Profile }) {
   useFocusEffect(useCallback(() => {
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (inFlight.current) return true;
-      if (step > 0) { move(step - 1); return true; }
+      const previous = previousStep(step);
+      if (previous !== null) { move(previous); return true; }
       return false;
     });
     return () => listener.remove();
@@ -77,9 +86,8 @@ export function OnboardingScreen({ profile }: { profile: Profile }) {
       finally { inFlight.current = false; setBusy(false); }
       return;
     }
-    if (step === 2 && !institution) { setError('Select an institution to continue.'); return; }
-    if (step === 3 && !field) { setError('Select a field of study to continue.'); return; }
-    if (step === 4 && !level) { setError('Select your study level to continue.'); return; }
+    const requirement = stepRequirementError(step, selections);
+    if (requirement) { setError(requirement); return; }
     move(step + 1);
   }
 
@@ -108,56 +116,52 @@ export function OnboardingScreen({ profile }: { profile: Profile }) {
     finally { inFlight.current = false; setBusy(false); }
   }
 
-  const canContinue = step === 2 ? Boolean(institution) : step === 3 ? Boolean(field) : step === 4 ? Boolean(level) : true;
+  const previous = previousStep(step);
+  const review = step === REVIEW_STEP;
+  const previewName = displayName.trim() || 'Penguin student';
   return <SafeAreaView className="flex-1 bg-background">
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerClassName="grow p-6">
-        <View className="w-full max-w-lg self-center gap-6">
-          <View className="flex-row items-center justify-between gap-3">
-            <Text variant="small" className="tracking-widest text-primary">PENGUIN</Text>
-            <Text variant="muted">{step === 0 ? 'Make yourself at home' : `Step ${step} of 5`}</Text>
-          </View>
-          <View className="flex-row gap-2" accessible accessibilityRole="progressbar" accessibilityLabel="Profile setup"
-            accessibilityValue={{ min: 0, max: 5, now: step }}>
-            {steps.slice(1).map((_, index) => <View key={index} className={`h-1 flex-1 rounded-full ${index < step ? 'bg-primary' : 'bg-muted'}`} />)}
-          </View>
-          <View className="gap-3"><Text variant="h1">{steps[step].title}</Text><Text variant="lead">{steps[step].description}</Text></View>
-          {step === 0 ? <Card variant="highlighted"><CardContent className="gap-4">
-            <Icon as={GraduationCap} size={32} color="primary" />
-            <Text variant="h3">A little about you. A world to explore.</Text>
-            <Text>Your name, your campus, your studies. Let’s start there.</Text>
+      <TopBar title={onboardingSteps[step].navTitle} brand={false}
+        onBack={previous !== null ? () => move(previous) : undefined} />
+      <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerClassName="grow px-5 pb-8 pt-2">
+        <View className="gap-5">
+          <OnboardingProgress step={step} />
+          {step === 0 ? <PenguinMark size={64} /> : null}
+          <View className="gap-2"><Text variant="h2">{onboardingSteps[step].title}</Text><Text variant="lead">{onboardingSteps[step].description}</Text></View>
+          {step === 0 ? <Card variant="muted"><CardContent className="gap-4">
+            <InfoRow icon={Users} label="Connect" value="Meet students from your campus" />
+            <InfoRow icon={MessagesSquare} label="Share" value="Trade questions, ideas, and notes" />
+            <InfoRow icon={Compass} label="Belong" value="Be part of a student community" />
           </CardContent></Card> : null}
           {step === 1 ? <View className="gap-5">
+            <UserAvatar name={previewName} size="xl" />
             <FormField label="Display name" required value={displayName} onChangeText={setDisplayName} autoComplete="name"
               autoCapitalize="words" maxLength={80} editable={!busy} hint="The name you’d like other students to use. Up to 80 characters." />
             <UsernameField value={username} onChange={setUsername} disabled={busy} />
           </View> : null}
           {step === 2 ? <SearchSelection key="institution" kind="institution" selected={institution} onSelect={setInstitution} /> : null}
           {step === 3 ? <SearchSelection key="field" kind="field" selected={field} onSelect={setField} /> : null}
-          {step === 4 ? <View className="gap-3">{(Object.entries(studyLevels) as [StudyLevel, string][]).map(([value, label]) =>
-            <Button key={value} variant={level === value ? 'secondary' : 'outline'} className="justify-start"
-              accessibilityState={{ selected: level === value }} onPress={() => setLevel(value)}>
-              <Text className="flex-1 shrink">{level === value ? '✓ ' : ''}{label}</Text>
-            </Button>)}</View> : null}
-          {step === 5 ? <Card><CardContent className="gap-5">
-            {[
-              { label: 'Identity', value: `${displayName.trim()}\n@${canonical}`, target: 1 },
-              { label: 'Institution', value: institution?.name, target: 2 },
-              { label: 'Field of study', value: field?.name, target: 3 },
-              { label: 'Study level', value: level ? studyLevels[level] : '', target: 4 },
-            ].map(row => <View key={row.label} className="gap-1">
-              <Text variant="muted">{row.label}</Text><Text>{row.value}</Text>
-              <Button variant="link" className="self-start px-0" disabled={busy} onPress={() => move(row.target)}><Text>Edit {row.label.toLowerCase()}</Text></Button>
-            </View>)}
+          {step === 4 ? <View className="gap-3" accessibilityRole="radiogroup">{(Object.entries(studyLevels) as [StudyLevel, string][]).map(([value, label]) =>
+            <SelectorOption key={value} icon={GraduationCap} title={label} selected={level === value} onPress={() => setLevel(value)} />)}</View> : null}
+          {review ? <Card variant="muted"><CardContent className="gap-4">
+            <IdentityRow name={previewName} username={canonical}
+              trailing={<Button variant="ghost" size="sm" disabled={busy} accessibilityLabel="Edit identity" onPress={() => move(1)}><Text>Edit</Text></Button>} />
+            <InfoRow icon={Building2} label="Institution" value={institution?.name ?? 'Not selected'} disabled={busy} onEdit={() => move(2)} />
+            <InfoRow icon={BookOpen} label="Field of study" value={field?.name ?? 'Not selected'} disabled={busy} onEdit={() => move(3)} />
+            <InfoRow icon={GraduationCap} label="Study level" value={level ? studyLevels[level] : 'Not selected'} disabled={busy} onEdit={() => move(4)} />
           </CardContent></Card> : null}
           {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
           <View className="gap-3">
-            <Button size="lg" loading={busy} disabled={!canContinue} onPress={() => void (step === 5 ? complete() : next())}>
-              <Text>{busy ? 'Please wait…' : step === 5 ? 'Complete profile' : 'Continue'}</Text>
+            <Button loading={busy} disabled={!canContinueStep(step, selections)} onPress={() => void (review ? complete() : next())}>
+              {review && !busy ? <Icon as={ArrowRight} size={18} color="primary-foreground" /> : null}
+              <Text>{primaryActionLabel(step, busy)}</Text>
             </Button>
-            {step > 0 ? <Button variant="outline" disabled={busy} onPress={() => move(step - 1)}><Text>Back</Text></Button> : null}
+            {review ? <Button variant="secondary" disabled={busy} onPress={() => move(1)}><Text>Edit my details</Text></Button> : null}
+            <Text variant="caption" className="text-muted-foreground">
+              {step === 0 ? 'Takes about a minute. You can edit your profile later.'
+                : review ? 'Your profile is saved when you complete this step.' : 'Nothing is saved until you complete your profile.'}
+            </Text>
             <Button variant="ghost" disabled={busy} onPress={() => void logout()}><Text>Log out</Text></Button>
-            <Text variant="muted">{step === 5 ? 'Your profile is saved when you complete this step.' : 'Nothing is saved until you complete your profile.'}</Text>
           </View>
         </View>
       </ScrollView>

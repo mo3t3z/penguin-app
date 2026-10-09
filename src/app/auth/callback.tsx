@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Platform } from 'react-native';
+import { MailCheck, MailWarning } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { EmailFrame } from '@/features/auth/email-frame';
@@ -21,8 +22,8 @@ function CallbackResult({ code, tokenHash, failed }: { code?: string; tokenHash?
     }).catch(() => { if (active) setState('error'); });
     return () => { active = false; };
   }, [code, tokenHash, failed]);
-  return <EmailFrame title={state === 'working' ? 'Opening your link…' : state === 'success' ? 'Email confirmed.' : 'This link can’t be used.'}>
-    <Text>{state === 'working' ? 'Please wait while Penguin securely completes sign-in.' : state === 'success' ? 'Your session is ready.' : 'The link may be expired, already used, or opened on a different device. Request a fresh link and open it on the device where you requested it.'}</Text>
+  return <EmailFrame icon={state === 'error' ? MailWarning : MailCheck} title={state === 'working' ? 'Opening your link…' : state === 'success' ? 'Email confirmed.' : 'This link can’t be used.'}>
+    <Text variant="lead">{state === 'working' ? 'Please wait while Penguin securely completes sign-in.' : state === 'success' ? 'Your session is ready.' : 'The link may be expired, already used, or opened on a different device. Request a fresh link and open it on the device where you requested it.'}</Text>
     {state === 'error' ? <>
       <Link href="/check-email" replace asChild><Button><Text>Request verification email</Text></Button></Link>
       <Link href="/forgot-password" replace asChild><Button variant="outline"><Text>Request password reset</Text></Button></Link>

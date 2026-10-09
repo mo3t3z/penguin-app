@@ -1,3 +1,9 @@
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
+import { usePenguinTheme } from '@/theme/provider';
+import { colors } from '@/theme/tokens';
 
-export default function PublicLayout() { return <Slot />; }
+// A stack so Log in and Sign up can go back to Welcome.
+export default function PublicLayout() {
+  const { scheme } = usePenguinTheme();
+  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors[scheme].background } }} />;
+}

@@ -9,7 +9,7 @@ export default function Index() {
   const { state } = useProfile();
   if (recovery) return <Redirect href="/reset-password" />;
   const destination = getOnboardingDestination(session?.user.id ?? null, state);
-  if (destination === 'auth') return <Redirect href="/login" />;
+  if (destination === 'auth') return <Redirect href="/welcome" />;
   if (destination === 'main') return <Redirect href="/home" />;
   if (destination === 'onboarding') return <Redirect href="/onboarding" />;
   return <ProfileStatus />;

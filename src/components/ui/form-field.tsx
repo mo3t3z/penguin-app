@@ -10,7 +10,7 @@ export function FormField({ label, hint, error, required, nativeID, ...props }: 
   const id = nativeID ?? generatedId;
   const description = error || hint;
   return <View className="gap-[7px]">
-    <Text nativeID={`${id}-label`} variant="small">{label}{required ? ' *' : ''}</Text>
+    <Text nativeID={`${id}-label`} variant="small">{label}</Text>
     <Input {...props} nativeID={id} invalid={Boolean(error)}
       accessibilityLabel={label} accessibilityLabelledBy={`${id}-label`}
       accessibilityHint={description} aria-required={required}
