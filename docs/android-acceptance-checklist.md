@@ -96,3 +96,41 @@ to the development project before any of it can be.
 - [ ] DEFERRED: The keyboard does not cover the composer; the list stays at the newest message while typing.
 - [ ] DEFERRED: Android back from a conversation returns to where it was opened (Messages or the profile).
 - [ ] DEFERRED: TalkBack announces bubbles with author and status, the send button, Retry and the block control.
+
+## Sprint 1: email confirmation, password recovery and deep links
+
+Confirmed by the user on the installed Android development APK on 2026-10-09. Only the
+scenarios the user reported are marked PASS; the rest are still untested.
+
+Email delivery:
+
+- [x] PASS: Sign up with a new address; a confirmation email arrives.
+- [x] PASS: "Send reset link" for an existing account sends a recovery email.
+- [ ] DEFERRED: "Resend verification email" sends a second email.
+- [ ] DEFERRED: Supabase Authentication → Logs show no mail error for sign-up, resend and reset requests.
+
+Android deep links:
+
+- [x] PASS: Tapping the confirmation link opens Penguin and the account is confirmed.
+- [x] PASS: Tapping the recovery link opens Penguin on "Choose a new password."; the password is updated and the new password works at log in.
+- [ ] DEFERRED: After "Email confirmed.", Continue leads to onboarding.
+- [ ] DEFERRED: Both links work with the app closed (cold start) and with it in the background.
+- [ ] DEFERRED: Tapping a link a second time shows "This link has expired or was already used."
+- [ ] DEFERRED: After Resend, the older email's link shows the "most recent email" guidance and Log in works.
+- [ ] DEFERRED: A recovery link for account B opened while signed in as A ends signed in as B on the reset screen, with none of A's data visible.
+- [ ] DEFERRED: Cancelling on the reset screen signs out and returns to "Forgot your password?".
+- [ ] DEFERRED: With SMTP deliberately broken, sign-up shows "couldn't send the email right now" and recovery shows the development note.
+
+## Android APK (development build)
+
+The development APK was built with EAS and installed by the user on 2026-10-09.
+
+- [x] PASS: `eas build --platform android --profile development` finishes and produces an APK.
+- [x] PASS: The APK installs, opens and runs the app from the local development server.
+- [x] PASS: A confirmation link tapped in Gmail opens the installed Penguin app (not Expo Go, not a browser page).
+- [x] PASS: A recovery link tapped in Gmail opens the installed Penguin app on the reset screen.
+- [ ] DEFERRED: Existing features (Home, Discover, Create post with images, Profile, Messages) work in the installed build.
+- [ ] DEFERRED: A standalone `preview` APK builds and runs with the Supabase values supplied as EAS environment variables.
+
+Not a device test, recorded for reference: on 2026-10-09 the Supabase dashboard showed
+`penguin://auth/callback` in the Redirect URLs.

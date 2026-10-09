@@ -1,0 +1,58 @@
+# Files EAS Build does not upload. When this file exists EAS uses it INSTEAD of
+# .gitignore, so every .gitignore entry is repeated first.
+
+# --- Same as .gitignore -------------------------------------------------------------
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+.env
+.env.*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# local Figma reference exports
+design-reference/figma-exports/
+
+# --- Not needed to build the app ----------------------------------------------------
+
+/docs
+/design-reference
+/tests
+/supabase
+/.claude

@@ -1,7 +1,19 @@
 import { supabase } from '@/lib/supabase';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { createURL } from 'expo-linking';
+import { Platform } from 'react-native';
+import { AUTH_CALLBACK_PATH, resolveAuthCallbackUrl } from './auth-redirect';
+import { isEmailDeliveryFailure } from './auth-errors';
 
-export const authCallbackUrl = () => createURL('auth/callback');
+export { authErrorMessage } from './auth-errors';
+
+// penguin://auth/callback in any installed build; an environment address only in
+// Expo Go and on the web.
+export const authCallbackUrl = () => resolveAuthCallbackUrl({
+  platform: Platform.OS,
+  expoGo: Constants.executionEnvironment === ExecutionEnvironment.StoreClient,
+  generated: () => createURL(AUTH_CALLBACK_PATH),
+});
 
 function client() {
   if (!supabase) throw new Error('Authentication is not configured.');
@@ -20,26 +32,22 @@ export async function signOut() {
   const { error } = await client().auth.signOut({ scope: 'local' });
   if (error) throw error;
 }
-export function authErrorMessage(error: unknown): string {
-  const code = error && typeof error === 'object' && 'code' in error ? error.code : null;
-  if (code === 'invalid_credentials') return 'The email or password is incorrect.';
-  if (code === 'email_not_confirmed') return 'Confirm your email before signing in. Use “Resend verification” if you need a new link.';
-  if (code === 'same_password') return 'Choose a password different from your current password.';
-  if (code === 'weak_password') return 'Choose a stronger password that meets the server’s password policy.';
-  if (code === 'over_request_rate_limit' || code === 'over_email_send_rate_limit') return 'Too many attempts. Please try again later.';
-  if (code === 'signup_disabled') return 'Account registration is currently unavailable.';
-  return 'We could not complete this request. Check your connection and try again.';
-}
-
 export async function resendVerification(email: string) {
   const { error } = await client().auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: authCallbackUrl() } });
   if (error) throw error;
 }
 
-export async function requestPasswordRecovery(email: string) {
-  // Never surface account-specific server responses or existence information.
-  try { await client().auth.resetPasswordForEmail(email.trim(), { redirectTo: authCallbackUrl() }); }
-  catch { /* Same neutral response for transport and account errors. */ }
+// The student always gets the same neutral answer, so the screen cannot reveal
+// whether an account exists. The return value only says whether the server's mail
+// provider refused to send, which the screen shows in development builds to make a
+// broken SMTP setup visible; it is never shown in production.
+export async function requestPasswordRecovery(email: string): Promise<{ deliveryFailed: boolean }> {
+  try {
+    const { error } = await client().auth.resetPasswordForEmail(email.trim(), { redirectTo: authCallbackUrl() });
+    return { deliveryFailed: isEmailDeliveryFailure(error) };
+  } catch (cause) {
+    return { deliveryFailed: isEmailDeliveryFailure(cause) };
+  }
 }
 
 // Coalesce StrictMode/remount delivery of the same one-use code. No tokens/logging.

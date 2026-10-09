@@ -21,6 +21,7 @@ export function EmailRequestScreen({ recovery = false }: { recovery?: boolean })
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(false);
+  const [deliveryFailed, setDeliveryFailed] = useState(false);
   const inFlight = useRef(false);
   async function submit() {
     if (inFlight.current || cooldown) return;
@@ -28,7 +29,7 @@ export function EmailRequestScreen({ recovery = false }: { recovery?: boolean })
     if (!isValidEmail(target)) { setError('Enter a valid email address.'); return; }
     inFlight.current = true; setBusy(true); setError(null);
     try {
-      if (recovery) await requestPasswordRecovery(target);
+      if (recovery) setDeliveryFailed((await requestPasswordRecovery(target)).deliveryFailed);
       else await resendVerification(target);
       setSent(true); setCooldown(true);
       setTimeout(() => setCooldown(false), 60_000);
@@ -49,17 +50,20 @@ export function EmailRequestScreen({ recovery = false }: { recovery?: boolean })
     <Text variant="lead">{recovery
       ? sent ? 'If an account exists for that address, you may receive a reset link. Check your inbox and spam folder. If no email arrives, wait a minute and try again.' : 'Enter your email to request a password reset link.'
       : knownEmail
-        ? 'We sent a verification link to your email. Open it on this device to continue.'
+        ? 'We sent a verification link to your email. Open the most recent Penguin email on this device to continue.'
         : 'If your registration needs confirmation, open the latest Penguin email on this device to continue. You can request another verification email below.'}</Text>
     {knownEmail
       ? <Card variant="muted"><CardContent><Text variant="large" selectable>{knownEmail}</Text></CardContent></Card>
       : <FormField label="Email address" leadingIcon={Mail} placeholder="you@university.edu" value={email} onChangeText={setEmail}
         keyboardType="email-address" autoComplete="email" autoCapitalize="none" autoCorrect={false} editable={!busy} required />}
     {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
+    {__DEV__ && recovery && deliveryFailed ? <Text variant="caption" className="text-warning" accessibilityLiveRegion="polite">
+      Development note: the server could not send this email. Check the SMTP settings in the Supabase dashboard. This note is not shown in release builds.
+    </Text> : null}
     {sent && !recovery ? <Text accessibilityLiveRegion="polite">If confirmation is available for this address, a verification email will be sent.</Text> : null}
     <Button variant={knownEmail ? 'secondary' : 'default'} loading={busy} disabled={cooldown} onPress={() => void submit()}><Text>{submitLabel}</Text></Button>
     {!recovery ? <Text variant="caption" className="text-muted-foreground">
-      Nothing in your inbox? Check your spam folder. You can resend a new link if the first one expires.
+      Nothing in your inbox? Check your spam folder. If you resend, only the newest email’s link works.
     </Text> : null}
     <View className="items-center">
       {knownEmail ? <Button variant="ghost" disabled={busy} onPress={enterDifferentEmail}><Text>Use a different email</Text></Button> : null}

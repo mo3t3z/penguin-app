@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.penguin.student",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -36,6 +37,13 @@
       ],
       "expo-font"
     ],
-    "scheme": "penguin"
+    "scheme": "penguin",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "011d2f5b-d2f2-4b1c-b1c1-1561c04c060c"
+      }
+    },
+    "owner": "moetez3s-team"
   }
 }
