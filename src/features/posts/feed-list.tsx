@@ -1,37 +1,52 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { router } from 'expo-router';
-import { FlatList, View, type ListRenderItem, type ViewToken } from 'react-native';
+import { FlatList, RefreshControl, View, type ListRenderItem, type ViewToken } from 'react-native';
+import { Users, WifiOff } from 'lucide-react-native';
+import { StatePanel } from '@/components/social/state-panel';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/features/auth/provider';
+import { usePenguinTheme } from '@/theme/provider';
+import { colors } from '@/theme/tokens';
 import type { FeedPost } from './feed';
+import { postPublishedEvents } from './feed-events';
 import { PostCard } from './post-card';
 import { signedMediaMemoryCache } from './private-media';
 import { usePostsFeed } from './use-feed';
 
+// Figma "Skeleton loader / Feed": a borderless card with an avatar, text lines, an
+// image block and three action pills.
 function FeedSkeleton() {
-  return <View className="w-full max-w-lg self-center gap-4" accessibilityLabel="Loading posts" accessibilityState={{ busy: true }}>
-    {[0, 1, 2].map((item) => <Card key={item} className="gap-0 py-0">
-      <CardContent className="gap-4 px-4 py-4">
-        <View className="flex-row items-center gap-3">
-          <Skeleton className="size-12 rounded-full" />
-          <View className="flex-1 gap-2"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-3 w-1/3" /></View>
-        </View>
-        <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" />
-      </CardContent>
-    </Card>)}
+  return <View className="gap-5" accessibilityLabel="Loading posts" accessibilityState={{ busy: true }}>
+    {[0, 1].map((item) => <View key={item} className="gap-[18px] rounded-lg bg-card p-4">
+      <View className="flex-row items-center gap-3">
+        <Skeleton className="size-10 rounded-full" />
+        <View className="gap-2"><Skeleton className="h-3 w-[134px] rounded-full" /><Skeleton className="h-2.5 w-[90px] rounded-full" /></View>
+      </View>
+      <Skeleton className="h-3 w-[88%] rounded-full" />
+      <Skeleton className="h-3 w-[79%] rounded-full" />
+      <Skeleton className="h-3 w-[58%] rounded-full" />
+      <View className="h-[180px] rounded-sm bg-muted" />
+      <View className="flex-row gap-6">
+        <Skeleton className="h-2.5 w-[52px] rounded-full" /><Skeleton className="h-2.5 w-16 rounded-full" /><Skeleton className="h-2.5 w-10 rounded-full" />
+      </View>
+    </View>)}
   </View>;
 }
 
 function EmptyFeed() {
-  return <Card variant="muted" className="w-full max-w-lg self-center">
-    <CardContent className="gap-2">
-      <Text variant="h3">The campus is quiet</Text>
-      <Text variant="muted">New student posts will appear here. Pull down anytime to check again.</Text>
-    </CardContent>
-  </Card>;
+  return <StatePanel
+    icon={Users}
+    title="The campus is quiet"
+    description="New student posts will appear here. Share the first one, or pull down to check again."
+    actionLabel="Create a post"
+    onAction={() => router.push('/create-post')}
+  />;
+}
+
+function ItemSeparator() {
+  return <View className="h-5" />;
 }
 
 const keyExtractor = (item: FeedPost) => item.id;
@@ -46,6 +61,8 @@ function sameIds(left: ReadonlySet<string>, right: ReadonlySet<string>) {
 export function FeedList({ header }: { header?: ReactElement }) {
   const { session } = useAuth();
   const userId = session?.user.id ?? null;
+  const { scheme } = usePenguinTheme();
+  const list = useRef<FlatList<FeedPost>>(null);
   const {
     status, items, nextCursor, loadingMore, error, errorKind,
     likesByPostId, commentCountsByPostId, refresh: refreshFeed, loadMore: loadMoreFeed, toggleLike,
@@ -66,22 +83,27 @@ export function FeedList({ header }: { header?: ReactElement }) {
     try { await refreshFeed(); }
     finally { setRefreshing(false); }
   }, [refreshFeed, refreshing]);
+  // A post published by this account refreshes the mounted feed and returns to the
+  // top, where the new post appears. Existing posts stay mounted while it loads.
+  useEffect(() => postPublishedEvents.subscribe((event) => {
+    if (!userId || event.userId !== userId) return;
+    list.current?.scrollToOffset({ offset: 0, animated: false });
+    void refresh();
+  }), [refresh, userId]);
   const loadMore = useCallback(() => {
     if (nextCursor && !loadingMore) void loadMoreFeed();
   }, [loadMoreFeed, loadingMore, nextCursor]);
   const openComments = useCallback((postId: string) => {
     router.push({ pathname: '/comments/[postId]', params: { postId } });
   }, []);
-  const renderPost = useCallback<ListRenderItem<FeedPost>>(({ item }) => <View className="mb-4 w-full max-w-lg self-center">
-    <PostCard
-      post={item}
-      visible={visiblePostIds.has(item.id)}
-      likeState={likesByPostId[item.id]}
-      commentCount={commentCountsByPostId[item.id]}
-      onToggleLike={toggleLike}
-      onOpenComments={openComments}
-    />
-  </View>, [commentCountsByPostId, likesByPostId, openComments, toggleLike, visiblePostIds]);
+  const renderPost = useCallback<ListRenderItem<FeedPost>>(({ item }) => <PostCard
+    post={item}
+    visible={visiblePostIds.has(item.id)}
+    likeState={likesByPostId[item.id]}
+    commentCount={commentCountsByPostId[item.id]}
+    onToggleLike={toggleLike}
+    onOpenComments={openComments}
+  />, [commentCountsByPostId, likesByPostId, openComments, toggleLike, visiblePostIds]);
   const extraData = useMemo(
     () => ({ commentCountsByPostId, likesByPostId, visiblePostIds }),
     [commentCountsByPostId, likesByPostId, visiblePostIds],
@@ -89,35 +111,45 @@ export function FeedList({ header }: { header?: ReactElement }) {
 
   const initialLoading = status === 'idle' || status === 'loading';
   const empty = initialLoading ? <FeedSkeleton />
-    : status === 'error' ? <Card variant="muted" className="w-full max-w-lg self-center">
-      <CardContent className="gap-3">
-        <Text variant="h3">Posts couldn’t load</Text>
-        <Text variant="muted">{error}</Text>
-        <Button variant="outline" onPress={() => void refreshFeed()}><Text>Retry</Text></Button>
-      </CardContent>
-    </Card> : <EmptyFeed />;
-  const footer = loadingMore ? <View className="w-full max-w-lg self-center gap-3 py-3" accessibilityLabel="Loading more posts" accessibilityState={{ busy: true }}>
-    <Skeleton className="h-3 w-24 self-center" />
-  </View> : error && items.length ? <View className="w-full max-w-lg self-center gap-2 pb-4">
-    <Text variant="muted" className="text-center" accessibilityLiveRegion="polite">{error}</Text>
+    : status === 'error' ? <StatePanel
+      icon={WifiOff}
+      title="Posts couldn’t load"
+      description={error}
+      live
+      actionLabel="Try again"
+      onAction={() => void refreshFeed()}
+    /> : <EmptyFeed />;
+  const footer = loadingMore ? <View className="items-center py-5" accessibilityLabel="Loading more posts" accessibilityState={{ busy: true }}>
+    <Skeleton className="h-2.5 w-24 rounded-full" />
+  </View> : error && items.length ? <View className="gap-3 pt-5">
+    <Text variant="caption" className="text-center text-muted-foreground" accessibilityLiveRegion="polite">{error}</Text>
     <Button variant="outline" onPress={() => errorKind === 'refresh' ? void refresh() : void loadMoreFeed()}>
       <Text>{errorKind === 'refresh' ? 'Retry refresh' : 'Retry loading more'}</Text>
     </Button>
-  </View> : null;
+  </View> : items.length && !nextCursor ? <Text variant="caption" className="pt-5 text-center text-muted-foreground">
+    You’re all caught up.
+  </Text> : null;
 
   return <FlatList
+    ref={list}
     className="flex-1 bg-background"
-    contentContainerClassName="px-4 pb-10"
+    contentContainerClassName="px-4 pb-6"
     data={items}
     renderItem={renderPost}
     extraData={extraData}
     keyExtractor={keyExtractor}
     ListHeaderComponent={header ?? null}
-    ListHeaderComponentStyle={{ marginBottom: 16 }}
+    ListHeaderComponentStyle={header ? { marginBottom: 20 } : undefined}
+    ItemSeparatorComponent={ItemSeparator}
     ListEmptyComponent={empty}
     ListFooterComponent={footer}
-    refreshing={refreshing}
-    onRefresh={() => void refresh()}
+    refreshControl={<RefreshControl
+      refreshing={refreshing}
+      onRefresh={() => void refresh()}
+      colors={[colors[scheme].primary]}
+      tintColor={colors[scheme].primary}
+      progressBackgroundColor={colors[scheme].card}
+    />}
     onEndReached={loadMore}
     onEndReachedThreshold={0.4}
     onViewableItemsChanged={onViewableItemsChanged}

@@ -35,6 +35,7 @@ import {
   type ImagePublishRecovery,
   type PublishProgress,
 } from './publish-flow';
+import { postPublishedEvents } from './feed-events';
 import { createPost, CreatePostTimeoutError } from './service';
 import { SelectedImagePreview } from './selected-image-preview';
 import {
@@ -159,7 +160,8 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
       if (__DEV__) console.info('[CreatePostScreen] createPost resolved', { requestSuffix });
       if (mounted.current) {
         if (__DEV__) console.info('[CreatePostScreen] navigation');
-        router.replace('/account');
+        postPublishedEvents.publish({ userId: profile.id });
+        router.dismissTo('/home');
       }
     } catch (cause) {
       if (__DEV__) console.info('[CreatePostScreen] caught error', {
@@ -243,7 +245,7 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View className="flex-row items-center justify-between border-b border-border px-3 py-2">
         <Button variant="ghost" size="sm" disabled={busy} accessibilityLabel="Cancel creating post"
-          onPress={() => router.replace('/account')}>
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/home')}>
           <Text>Cancel</Text>
         </Button>
         <Text variant="h4">Create Post</Text>
@@ -261,7 +263,7 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
             <Avatar key={profile.avatar_url ?? 'initials'} alt={`${name}'s avatar`} size="lg">
               {profile.avatar_url ? <AvatarImage source={{ uri: profile.avatar_url }} /> : null}
               <AvatarFallback className="bg-secondary">
-                <Text className="font-semibold text-primary">{initialsFor(name)}</Text>
+                <Text className="font-inter-semibold text-accent-foreground">{initialsFor(name)}</Text>
               </AvatarFallback>
             </Avatar>
             <View className="min-w-0 flex-1">

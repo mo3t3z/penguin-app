@@ -7,7 +7,7 @@ import { usePenguinTheme } from '@/theme/provider';
 
 const buttonVariants = cva(
   cn(
-    'group shrink-0 flex-row items-center justify-center gap-2 rounded-md shadow-none',
+    'group shrink-0 flex-row items-center justify-center gap-2 rounded-md',
     Platform.select({
       web: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     })
@@ -15,37 +15,25 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: cn(
-          'bg-primary active:bg-primary/90 shadow-sm shadow-black/5',
-          Platform.select({ web: 'hover:bg-primary/90' })
-        ),
+        default: cn('bg-primary active:bg-primary/90', Platform.select({ web: 'hover:bg-primary/90' })),
         destructive: cn(
           'bg-destructive active:bg-destructive/90',
           Platform.select({
             web: 'hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40',
           })
         ),
-        outline: cn(
-          'border-border bg-background active:bg-accent dark:bg-input/30 dark:border-input dark:active:bg-input/50 border shadow-sm shadow-black/5',
-          Platform.select({
-            web: 'hover:bg-accent dark:hover:bg-input/50',
-          })
-        ),
-        secondary: cn(
-          'bg-secondary active:bg-secondary/80 shadow-sm shadow-black/5',
-          Platform.select({ web: 'hover:bg-secondary/80' })
-        ),
-        ghost: cn(
-          'active:bg-accent dark:active:bg-accent/50',
-          Platform.select({ web: 'hover:bg-accent dark:hover:bg-accent/50' })
-        ),
+        // Figma "Secondary button": card surface, Rule border, teal label.
+        outline: cn('border-border bg-card active:bg-accent border', Platform.select({ web: 'hover:bg-accent' })),
+        secondary: cn('border-border bg-card active:bg-accent border', Platform.select({ web: 'hover:bg-accent' })),
+        ghost: cn('active:bg-accent', Platform.select({ web: 'hover:bg-accent' })),
         link: '',
       },
       size: {
-        default: 'min-h-12 px-5 py-3',
+        default: 'min-h-12 px-4 py-3',
         sm: 'min-h-12 gap-1.5 px-3 py-3',
-        lg: 'min-h-14 px-6 py-4',
-        icon: 'min-h-12 min-w-12 p-3',
+        lg: 'min-h-12 px-6 py-3',
+        // 44px visual per Figma; the default hitSlop below keeps a 48px touch target.
+        icon: 'size-11',
       },
     },
     defaultVariants: {
@@ -57,7 +45,7 @@ const buttonVariants = cva(
 
 const buttonTextVariants = cva(
   cn(
-    'text-foreground text-body font-semibold',
+    'text-foreground text-metadata font-inter-semibold',
     Platform.select({ web: 'pointer-events-none transition-colors' })
   ),
   {
@@ -65,12 +53,9 @@ const buttonTextVariants = cva(
       variant: {
         default: 'text-primary-foreground',
         destructive: 'text-destructive-foreground',
-        outline: cn(
-          'group-active:text-accent-foreground',
-          Platform.select({ web: 'group-hover:text-accent-foreground' })
-        ),
-        secondary: 'text-secondary-foreground',
-        ghost: 'group-active:text-accent-foreground',
+        outline: 'text-primary',
+        secondary: 'text-primary',
+        ghost: 'text-primary',
         link: cn(
           'text-primary group-active:underline',
           Platform.select({ web: 'underline-offset-4 hover:underline group-hover:underline' })
@@ -92,14 +77,26 @@ const buttonTextVariants = cva(
 
 type ButtonProps = React.ComponentProps<typeof Pressable> & VariantProps<typeof buttonVariants> & { loading?: boolean };
 
-function Button({ className, variant, size, loading = false, disabled, children, ...props }: ButtonProps) {
+const iconHitSlop = 2;
+
+function Button({ className, variant, size, loading = false, disabled, children, hitSlop, ...props }: ButtonProps) {
   const { scheme } = usePenguinTheme();
-  const spinnerColor = !variant || variant === 'default' ? colors[scheme]['primary-foreground'] : variant === 'destructive' ? colors[scheme]['destructive-foreground'] : colors[scheme].foreground;
+  const kind = variant ?? 'default';
+  const spinnerColor = kind === 'default' ? colors[scheme]['primary-foreground'] : kind === 'destructive' ? colors[scheme]['destructive-foreground'] : colors[scheme].primary;
+  // Figma disabled state is an Ice fill with secondary text; loading keeps the action colour.
+  const filledDisabled = Boolean(disabled) && !loading && size !== 'icon' && kind !== 'link' && kind !== 'destructive';
+  const fadedDisabled = Boolean(disabled) && !loading && !filledDisabled;
   return (
-    <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
+    <TextClassContext.Provider value={cn(buttonTextVariants({ variant, size }), filledDisabled && 'text-muted-foreground')}>
       <Pressable
-        className={cn((disabled || loading) && 'opacity-50', buttonVariants({ variant, size }), className)}
+        className={cn(
+          buttonVariants({ variant, size }),
+          filledDisabled && 'bg-muted border-transparent',
+          fadedDisabled && 'opacity-50',
+          className
+        )}
         role="button"
+        hitSlop={hitSlop ?? (size === 'icon' ? iconHitSlop : undefined)}
         {...props}
         disabled={disabled || loading}
         aria-busy={loading || props['aria-busy']}
@@ -116,4 +113,3 @@ function Button({ className, variant, size, loading = false, disabled, children,
 
 export { Button, buttonTextVariants, buttonVariants };
 export type { ButtonProps };
-

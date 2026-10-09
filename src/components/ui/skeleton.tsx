@@ -6,7 +6,7 @@ function Skeleton({
   ...props
 }: React.ComponentProps<typeof View> & React.RefAttributes<View>) {
   // Static: no looping animation cost and safe for reduced motion.
-  return <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" className={cn('bg-muted rounded-md', className)} {...props} />;
+  return <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" className={cn('bg-skeleton rounded-md', className)} {...props} />;
 }
 
 export { Skeleton };

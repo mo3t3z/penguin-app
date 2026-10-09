@@ -6,7 +6,7 @@ import { Platform, View } from 'react-native';
 
 const badgeVariants = cva(
   cn(
-    'border-border group shrink-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-full border px-2 py-0.5',
+    'border-border group shrink-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-sm border px-2 py-1',
     Platform.select({
       web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive w-fit whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] [&>svg]:pointer-events-none [&>svg]:size-3',
     })
@@ -27,7 +27,7 @@ const badgeVariants = cva(
           Platform.select({ web: '[a&]:hover:bg-destructive/90' })
         ),
         outline: Platform.select({ web: '[a&]:hover:bg-accent [a&]:hover:text-accent-foreground' }),
-        campus: 'bg-accent border-transparent',
+        campus: 'bg-muted border-transparent',
         subject: 'bg-muted border-transparent',
         success: 'border-success bg-transparent',
         warning: 'border-warning bg-transparent',
@@ -39,15 +39,15 @@ const badgeVariants = cva(
   }
 );
 
-const badgeTextVariants = cva('text-caption font-medium', {
+const badgeTextVariants = cva('text-micro font-inter-medium', {
   variants: {
     variant: {
       default: 'text-primary-foreground',
       secondary: 'text-secondary-foreground',
       destructive: 'text-destructive-foreground',
       outline: 'text-foreground',
-      campus: 'text-accent-foreground',
-      subject: 'text-secondary-foreground',
+      campus: 'text-muted-foreground',
+      subject: 'text-muted-foreground',
       success: 'text-success',
       warning: 'text-warning',
     },

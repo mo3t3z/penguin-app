@@ -28,7 +28,7 @@ function CommentItemComponent({ comment, ownComment, onDelete }: {
     <Avatar key={avatar ?? 'initials'} alt={`${name}'s avatar`} size="md">
       {avatar ? <AvatarImage source={{ uri: avatar }} /> : null}
       <AvatarFallback className="bg-secondary">
-        <Text className="font-semibold text-primary">{initialsFor(name)}</Text>
+        <Text className="font-inter-semibold text-accent-foreground">{initialsFor(name)}</Text>
       </AvatarFallback>
     </Avatar>
     <View className="min-w-0 flex-1 gap-1">

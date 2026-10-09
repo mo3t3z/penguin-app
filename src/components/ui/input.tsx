@@ -16,14 +16,14 @@ function Input({ className, variant = 'default', invalid, onFocus, onBlur, ...pr
       selectionColor={colors[scheme].primary}
       returnKeyType={variant === 'search' ? 'search' : undefined}
       className={cn(
-        'border-input bg-card text-foreground min-h-12 w-full min-w-0 rounded-md border px-4 py-3 text-body',
-        variant === 'search' && 'rounded-full bg-muted',
+        'border-input bg-card text-foreground min-h-[52px] w-full min-w-0 rounded-md border px-[14px] py-3 text-body font-sans',
+        variant === 'search' && 'bg-card',
         (variant === 'multiline' || props.multiline) && 'min-h-28',
-        focused && 'border-primary',
+        focused && 'border-2 border-primary px-[13px] py-[11px]',
         invalid && 'border-destructive',
         props.editable === false &&
         cn(
-          'opacity-50',
+          'bg-muted',
           Platform.select({ web: 'disabled:pointer-events-none disabled:cursor-not-allowed' })
         ),
         Platform.select({

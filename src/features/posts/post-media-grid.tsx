@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { ImageIcon, RefreshCw } from 'lucide-react-native';
-import { Image, View } from 'react-native';
+import { Image, View, type ViewStyle } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,20 +9,22 @@ import type { FeedMedia } from './feed';
 import { orderReadyMedia } from './private-media';
 import { usePrivateMediaUrl } from './use-private-media-url';
 
-function PrivatePostImage({ media, index, count, visible }: {
+// Tile proportions from the Figma "Image grid" at 326px: one image is 326x206,
+// two are 160x176 each, and three or four use 160x142 tiles (the third of three
+// spans the full width).
+const tileRatio = { single: 326 / 206, pair: 160 / 176, quad: 160 / 142, wide: 326 / 142 } as const;
+
+function PrivatePostImage({ media, index, count, visible, style }: {
   media: FeedMedia;
   index: number;
   count: number;
   visible: boolean;
+  style: ViewStyle;
 }) {
   const { url, loading, error, refresh } = usePrivateMediaUrl(media.id, visible);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const automaticRetryUsed = useRef(false);
   const imageFailed = Boolean(url && failedUrl === url);
-  const width = count === 1 || (count === 3 && index === 0) ? '100%' : '48.5%';
-  const aspectRatio = count === 1 && media.width && media.height
-    ? Math.min(1.6, Math.max(0.8, media.width / media.height))
-    : count === 3 && index === 0 ? 16 / 10 : 1;
 
   useEffect(() => {
     if (!visible) automaticRetryUsed.current = false;
@@ -44,10 +46,7 @@ function PrivatePostImage({ media, index, count, visible }: {
   };
   const label = `Image ${index + 1} of ${count} in this post`;
 
-  return <View
-    className="min-h-36 overflow-hidden rounded-md border border-border bg-muted"
-    style={{ width, aspectRatio }}
-  >
+  return <View className="overflow-hidden rounded-sm bg-muted" style={style}>
     {url && !imageFailed ? <Image
       source={{ uri: url }}
       className="size-full"
@@ -61,11 +60,11 @@ function PrivatePostImage({ media, index, count, visible }: {
         setFailedUrl(null);
       }}
     /> : loading ? <Skeleton className="size-full rounded-none" accessibilityLabel={`Loading ${label.toLowerCase()}`} />
-      : <View className="size-full items-center justify-center gap-2 px-3" accessible accessibilityLabel={`${label}. Image unavailable.`}>
-        <Icon as={ImageIcon} size={32} color="muted-foreground" />
-        <Text variant="caption" className="text-center text-muted-foreground">{error ?? 'Image unavailable'}</Text>
+      : <View className="size-full items-center justify-center gap-1 px-3" accessible accessibilityLabel={`${label}. Image unavailable.`}>
+        <Icon as={ImageIcon} size={24} color="muted-foreground" />
+        <Text variant="caption" numberOfLines={2} className="text-center text-muted-foreground">{error ?? 'Image unavailable'}</Text>
         <Button variant="ghost" size="sm" onPress={retry} accessibilityLabel={`Retry loading image ${index + 1}`}>
-          <Icon as={RefreshCw} size={16} color="foreground" />
+          <Icon as={RefreshCw} size={16} color="primary" />
           <Text>Retry</Text>
         </Button>
       </View>}
@@ -77,18 +76,30 @@ function PostMediaGridComponent({ media, visible }: { media: FeedMedia[]; visibl
   const ordered = orderReadyMedia(media);
   const count = ordered.length;
   if (!count) return null;
+  const tile = (index: number, style: ViewStyle) => <PrivatePostImage
+    key={ordered[index].id}
+    media={ordered[index]}
+    index={index}
+    count={count}
+    visible={visible}
+    style={style}
+  />;
+  const half = (ratio: number): ViewStyle => ({ flex: 1, aspectRatio: ratio });
   return <View
-    className="flex-row flex-wrap gap-2"
+    className="gap-1.5"
     accessibilityRole="summary"
     accessibilityLabel={`${count} image attachment${count === 1 ? '' : 's'}`}
   >
-    {ordered.map((item, index) => <PrivatePostImage
-      key={item.id}
-      media={item}
-      index={index}
-      count={count}
-      visible={visible}
-    />)}
+    {count === 1 ? tile(0, { width: '100%', aspectRatio: tileRatio.single }) : null}
+    {count >= 2 ? <View className="flex-row gap-1.5">
+      {tile(0, half(count === 2 ? tileRatio.pair : tileRatio.quad))}
+      {tile(1, half(count === 2 ? tileRatio.pair : tileRatio.quad))}
+    </View> : null}
+    {count === 3 ? tile(2, { width: '100%', aspectRatio: tileRatio.wide }) : null}
+    {count >= 4 ? <View className="flex-row gap-1.5">
+      {tile(2, half(tileRatio.quad))}
+      {tile(3, half(tileRatio.quad))}
+    </View> : null}
   </View>;
 }
 

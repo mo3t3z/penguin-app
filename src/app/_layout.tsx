@@ -1,5 +1,10 @@
 import '../../global.css';
 import { Stack } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PenguinThemeProvider, usePenguinTheme } from '@/theme/provider';
@@ -13,9 +18,13 @@ import { getOnboardingDestination } from '@/features/profile/onboarding';
 
 function Navigation() {
   const { scheme } = usePenguinTheme();
+  // Keys are the family names used by the Tailwind font utilities. If loading fails
+  // the app continues with the system font.
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
   const { session, loading, error, retry, recovery } = useAuth();
   const { state } = useProfile();
   const destination = getOnboardingDestination(session?.user.id ?? null, state);
+  if (!fontsLoaded && !fontError) return <View className="flex-1 bg-background" />;
   if (loading || error) return <View className="flex-1 justify-center gap-4 bg-background p-6">
     <Text>{loading ? 'Restoring your session…' : error}</Text>
     {error ? <Button onPress={retry}><Text>Retry</Text></Button> : null}

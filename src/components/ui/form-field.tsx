@@ -9,13 +9,13 @@ export function FormField({ label, hint, error, required, nativeID, ...props }: 
   const generatedId = useId();
   const id = nativeID ?? generatedId;
   const description = error || hint;
-  return <View className="gap-2">
+  return <View className="gap-[7px]">
     <Text nativeID={`${id}-label`} variant="small">{label}{required ? ' *' : ''}</Text>
     <Input {...props} nativeID={id} invalid={Boolean(error)}
       accessibilityLabel={label} accessibilityLabelledBy={`${id}-label`}
       accessibilityHint={description} aria-required={required}
       aria-describedby={description ? `${id}-description` : undefined} />
-    {description ? <Text nativeID={`${id}-description`} variant="small"
+    {description ? <Text nativeID={`${id}-description`} variant="caption"
       className={error ? 'text-destructive' : 'text-muted-foreground'}
       accessibilityLiveRegion={error ? 'polite' : 'none'}>{description}</Text> : null}
   </View>;

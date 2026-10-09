@@ -1,20 +1,15 @@
 import { memo } from 'react';
-import { View } from 'react-native';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Pressable, View } from 'react-native';
+import { IdentityRow } from '@/components/social/identity-row';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
+import { cn } from '@/lib/utils';
 import { Heart, MessageCircle } from 'lucide-react-native';
 import type { FeedPost } from './feed';
 import type { PostLikeState } from './likes';
 import type { CommentCountState } from '../comments/comment-counts';
 import { PostMediaGrid } from './post-media-grid';
 import { publicationAccessibilityLabel, relativePublicationTime } from './post-presentation';
-
-function initialsFor(name: string) {
-  return name.split(/\s+/).slice(0, 2).map((part) => [...part][0]).join('').toUpperCase() || 'P';
-}
 
 type PostCardProps = {
   post: FeedPost;
@@ -25,70 +20,64 @@ type PostCardProps = {
   onOpenComments: (postId: string) => void;
 };
 
+// 44px-high actions per Figma; the vertical hitSlop gives a 48px touch target.
+const actionHitSlop = { top: 2, bottom: 2 };
+
 function PostCardComponent({ post, visible, likeState, commentCount, onToggleLike, onOpenComments }: PostCardProps) {
   const name = post.author?.display_name?.trim() || 'Penguin student';
   const username = post.author?.username?.trim() || 'student';
   const avatar = post.author?.avatar_url?.trim() || null;
-  return <Card className="gap-0 py-0" accessibilityLabel={`Post by ${name}`}>
-    <CardContent className="gap-4 px-4 py-4">
-      <View className="flex-row items-center gap-3">
-        <Avatar key={avatar ?? 'initials'} alt={`${name}'s avatar`} size="lg">
-          {avatar ? <AvatarImage source={{ uri: avatar }} /> : null}
-          <AvatarFallback className="bg-secondary">
-            <Text className="font-semibold text-primary">{initialsFor(name)}</Text>
-          </AvatarFallback>
-        </Avatar>
-        <View className="min-w-0 flex-1">
-          <Text variant="large" numberOfLines={1}>{name}</Text>
-          <View className="flex-row items-center gap-2">
-            <Text variant="muted" numberOfLines={1} className="shrink">@{username}</Text>
-            <Text variant="muted" accessibilityElementsHidden>·</Text>
-            <Text
-              variant="muted"
-              accessibilityLabel={publicationAccessibilityLabel(post.created_at)}
-            >
-              {relativePublicationTime(post.created_at)}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <Text selectable>{post.content}</Text>
-      <PostMediaGrid media={post.media} visible={visible} />
-      <View className="-ml-3 flex-row items-center justify-between gap-2">
-        <View className="flex-row items-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={!likeState || likeState.count === null || likeState.pending}
-          onPress={() => onToggleLike(post.id)}
-          accessibilityLabel={likeState?.count === null || !likeState
-            ? 'Likes unavailable'
-            : `${likeState.likedByMe ? 'Unlike' : 'Like'} this post. ${likeState.count} ${likeState.count === 1 ? 'like' : 'likes'}`}
-          accessibilityState={{ selected: likeState?.likedByMe ?? false, busy: likeState?.pending ?? false }}
-        >
-          <Icon as={Heart} color={likeState?.likedByMe ? 'primary' : 'muted-foreground'} />
-          <Text className={likeState?.likedByMe ? 'font-semibold text-primary' : 'text-muted-foreground'}>
-            {likeState?.count ?? '—'}
-          </Text>
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onPress={() => onOpenComments(post.id)}
-          accessibilityLabel={`Open comments. ${commentCount?.count ?? 'Count unavailable'}${commentCount?.count === 1 ? ' comment' : commentCount?.count === null || !commentCount ? '' : ' comments'}`}
-        >
-          <Icon as={MessageCircle} color="muted-foreground" />
-          <Text className="text-muted-foreground">{commentCount?.count ?? '—'}</Text>
-        </Button>
-        </View>
-        {likeState?.error ? (
-          <Text variant="muted" className="shrink text-right text-xs" accessibilityLiveRegion="polite">
-            {likeState.error}
-          </Text>
-        ) : null}
-      </View>
-    </CardContent>
-  </Card>;
+  const likesUnavailable = !likeState || likeState.count === null;
+  const likeDisabled = likesUnavailable || likeState.pending;
+  const liked = likeState?.likedByMe ?? false;
+  const likeCount = likeState?.count ?? null;
+  const comments = commentCount?.count ?? null;
+  return <View className="gap-[14px] rounded-lg border border-border bg-card p-4" accessibilityLabel={`Post by ${name}`}>
+    <IdentityRow
+      name={name}
+      username={username}
+      avatarUrl={avatar}
+      time={relativePublicationTime(post.created_at)}
+      timeAccessibilityLabel={publicationAccessibilityLabel(post.created_at)}
+    />
+    <Text selectable className="text-metadata">{post.content}</Text>
+    <PostMediaGrid media={post.media} visible={visible} />
+    <View className="flex-row items-center gap-[18px]">
+      <Pressable
+        className={cn('min-h-11 min-w-12 flex-row items-center gap-1.5', likesUnavailable && 'opacity-50')}
+        role="button"
+        hitSlop={actionHitSlop}
+        disabled={likeDisabled}
+        onPress={() => onToggleLike(post.id)}
+        accessibilityLabel={likesUnavailable
+          ? 'Likes unavailable'
+          : `${liked ? 'Unlike' : 'Like'} this post. ${likeCount} ${likeCount === 1 ? 'like' : 'likes'}`}
+        accessibilityState={{ selected: liked, busy: likeState?.pending ?? false, disabled: likeDisabled }}
+      >
+        <Icon as={Heart} color={liked ? 'primary' : 'muted-foreground'} filled={liked} />
+        <Text className={cn('text-caption', liked ? 'font-inter-semibold text-primary' : 'text-muted-foreground')}>
+          {likeCount === null ? '—' : likeCount === 0 ? 'Like' : likeCount}
+        </Text>
+      </Pressable>
+      <Pressable
+        className="min-h-11 min-w-12 flex-row items-center gap-1.5"
+        role="button"
+        hitSlop={actionHitSlop}
+        onPress={() => onOpenComments(post.id)}
+        accessibilityLabel={`Open comments. ${comments ?? 'Count unavailable'}${comments === 1 ? ' comment' : comments === null ? '' : ' comments'}`}
+      >
+        <Icon as={MessageCircle} color="muted-foreground" />
+        <Text className="text-caption text-muted-foreground">
+          {comments === null ? '—' : comments === 0 ? 'Comment' : comments}
+        </Text>
+      </Pressable>
+      {likeState?.error ? (
+        <Text variant="caption" className="min-w-0 flex-1 text-right text-muted-foreground" accessibilityLiveRegion="polite">
+          {likeState.error}
+        </Text>
+      ) : null}
+    </View>
+  </View>;
 }
 
 export const PostCard = memo(PostCardComponent);

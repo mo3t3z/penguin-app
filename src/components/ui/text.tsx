@@ -6,7 +6,7 @@ import { Platform, Text as RNText, type Role } from 'react-native';
 
 const textVariants = cva(
   cn(
-    'text-foreground text-body',
+    'text-foreground text-body font-sans',
     Platform.select({
       web: 'select-text',
     })
@@ -16,24 +16,24 @@ const textVariants = cva(
       variant: {
         default: '',
         h1: cn(
-          'text-display font-bold tracking-tight',
+          'text-display font-inter-bold tracking-tight',
           Platform.select({ web: 'scroll-m-20 text-balance' })
         ),
         h2: cn(
-          'text-title font-semibold tracking-tight',
+          'text-title font-inter-bold tracking-tight',
           Platform.select({ web: 'scroll-m-20 first:mt-0' })
         ),
-        h3: cn('text-heading font-semibold tracking-tight', Platform.select({ web: 'scroll-m-20' })),
-        h4: cn('text-lead font-semibold', Platform.select({ web: 'scroll-m-20' })),
+        h3: cn('text-heading font-inter-bold tracking-tight', Platform.select({ web: 'scroll-m-20' })),
+        h4: cn('text-lead font-inter-semibold', Platform.select({ web: 'scroll-m-20' })),
         p: 'text-body',
         blockquote: 'mt-4 border-l-2 pl-3 italic sm:mt-6 sm:pl-6',
         code: cn(
-          'bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold'
+          'bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-label'
         ),
-        lead: 'text-muted-foreground text-lead',
-        large: 'text-lead font-semibold',
-        small: 'text-metadata font-medium',
-        muted: 'text-muted-foreground text-metadata',
+        lead: 'text-muted-foreground text-body',
+        large: 'text-body font-inter-semibold',
+        small: 'text-label font-inter-semibold',
+        muted: 'text-muted-foreground text-label',
         caption: 'text-caption',
       },
     },

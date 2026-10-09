@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowUpRight, Feather, Moon, Sun, Monitor } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpRight, Bell, Moon, Sun, Monitor, Users } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,21 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FormField } from '@/components/ui/form-field';
 import { Icon } from '@/components/ui/icon';
+import { IconButton } from '@/components/ui/icon-button';
+import { BrandMark } from '@/components/brand-mark';
+import { IdentityRow } from '@/components/social/identity-row';
+import { StatePanel } from '@/components/social/state-panel';
+import { PostCard } from '@/features/posts/post-card';
+import type { FeedPost } from '@/features/posts/feed';
 import { usePenguinTheme } from '@/theme/provider';
 import { colors, avatarSizes } from '@/theme/tokens';
+
+const previewPost: FeedPost = {
+  id: 'preview-post', author_id: 'preview-author', created_at: '2026-10-08T10:00:00.000000+00:00', updated_at: '2026-10-08T10:00:00.000000+00:00',
+  content: 'Does anyone have a good way to build intuition for eigenvectors? The calculations make sense, but I’m still missing the bigger picture.',
+  author: { id: 'preview-author', username: 'aminay', display_name: 'Amina Yusuf', avatar_url: null },
+  media: [],
+};
 
 function Section({ number, title, children }: React.PropsWithChildren<{ number: string; title: string }>) {
   return <View className="gap-5">
@@ -28,6 +41,7 @@ export default function ComponentGallery() {
   const [name, setName] = useState('');
   const [checked, setChecked] = useState(false);
   const [presses, setPresses] = useState(0);
+  const [liked, setLiked] = useState(false);
   const palette = colors[scheme];
   return <SafeAreaView className="flex-1 bg-background">
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -35,13 +49,13 @@ export default function ComponentGallery() {
         <View className="w-full max-w-2xl gap-10">
           <View className="flex-row items-center justify-between">
             <Link href="/" asChild><Button variant="ghost" size="icon" accessibilityLabel="Back to foundation"><Icon as={ArrowLeft} /></Button></Link>
-            <Text variant="small" className="tracking-widest">PENGUIN / STUDIO</Text>
-            <Icon as={Feather} color="primary" size={24} />
+            <BrandMark />
+            <IconButton icon={Bell} accessibilityLabel="Icon button preview" onPress={() => setPresses(value => value + 1)} />
           </View>
           <View className="gap-4">
             <View className="self-start"><Badge variant="campus"><Text>SPRINT 0 · UI FOUNDATION</Text></Badge></View>
             <Text variant="h1">Made for{'\n'}what’s next.</Text>
-            <Text variant="lead">Ink. Snow. Glacier. A quieter canvas for bright minds and shared momentum.</Text>
+            <Text variant="lead">Snow, ink and teal. A quieter canvas for bright minds and shared momentum.</Text>
           </View>
           <View className="gap-3">
             <Text variant="small">Appearance</Text>
@@ -67,8 +81,11 @@ export default function ComponentGallery() {
           <Section number="02" title="Words with room">
             <Text variant="h1">Big ideas.</Text><Text variant="h2">Small beginnings.</Text>
             <Text variant="h3">Space to belong.</Text><Text variant="lead">A little curiosity goes a long way.</Text>
-            <Text>Body · 16/24. Clear, comfortable reading for everyday conversations.</Text>
-            <Text variant="muted">Metadata · 14/20. Supporting context.</Text><Text variant="caption">Caption · 12/16. The small details.</Text>
+            <Text>Body · 15/22. Clear, comfortable reading for everyday conversations.</Text>
+            <Text className="text-metadata">Post text · 14/20. What students share.</Text>
+            <Text variant="small">Label · 13/18 semibold. Field labels.</Text>
+            <Text variant="muted">Secondary · 13/18. Supporting context.</Text><Text variant="caption">Caption · 12/16. The small details.</Text>
+            <Text className="text-micro text-muted-foreground">Metadata · 11/14. Times and tab labels.</Text>
           </Section>
           <Section number="03" title="Every action, considered">
             <View className="flex-row flex-wrap gap-3">
@@ -112,6 +129,15 @@ export default function ComponentGallery() {
               <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-3/4" />
             </View>
             <Text variant="muted">Quiet, static placeholders. No unnecessary motion.</Text>
+            <View className="rounded-lg border border-border bg-card p-4">
+              <IdentityRow name="Maya Chen" username="mayac" time="38m" timeAccessibilityLabel="Published 38 minutes ago" />
+            </View>
+            <PostCard post={previewPost} visible={false}
+              likeState={{ count: liked ? 13 : 12, likedByMe: liked, pending: false, error: null }}
+              commentCount={{ count: 0, error: null }}
+              onToggleLike={() => setLiked(value => !value)} onOpenComments={() => setPresses(value => value + 1)} />
+            <StatePanel icon={Users} title="The campus is quiet" description="Empty and error states share this layout."
+              actionLabel="Primary action" onAction={() => setPresses(value => value + 1)} />
           </Section>
           <Separator /><Text variant="caption" className="text-muted-foreground">PENGUIN · DEVELOPMENT GALLERY · FOUNDATION BEFORE FEATURES</Text>
         </View>

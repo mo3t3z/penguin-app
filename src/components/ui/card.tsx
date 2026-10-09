@@ -7,10 +7,10 @@ function Card({ className, variant = 'surface', ...props }: React.ComponentProps
     <TextClassContext.Provider value="text-card-foreground">
       <View
         className={cn(
-          'bg-card border-border flex flex-col gap-4 rounded-lg border py-5',
+          'bg-card border-border flex flex-col gap-4 rounded-lg border py-4',
           variant === 'outlined' && 'bg-transparent',
           variant === 'muted' && 'bg-muted border-transparent',
-          variant === 'highlighted' && 'bg-accent border-primary',
+          variant === 'highlighted' && 'bg-accent border-transparent',
           className
         )}
         {...props}
@@ -20,7 +20,7 @@ function Card({ className, variant = 'surface', ...props }: React.ComponentProps
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<typeof View> & React.RefAttributes<View>) {
-  return <View className={cn('flex flex-col gap-1.5 px-6', className)} {...props} />;
+  return <View className={cn('flex flex-col gap-1.5 px-4', className)} {...props} />;
 }
 
 function CardTitle({
@@ -34,7 +34,7 @@ function CardTitle({
       ref={ref}
       role="heading"
       aria-level={3}
-      className={cn('text-heading font-semibold', className)}
+      className={cn('text-lead font-inter-semibold', className)}
       {...props}
     />
   );
@@ -44,15 +44,15 @@ function CardDescription({
   className,
   ...props
 }: React.ComponentProps<typeof Text> & React.RefAttributes<typeof Text>) {
-  return <Text className={cn('text-muted-foreground text-sm', className)} {...props} />;
+  return <Text className={cn('text-muted-foreground text-label', className)} {...props} />;
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<typeof View> & React.RefAttributes<View>) {
-  return <View className={cn('px-6', className)} {...props} />;
+  return <View className={cn('px-4', className)} {...props} />;
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<typeof View> & React.RefAttributes<View>) {
-  return <View className={cn('flex flex-row items-center px-6', className)} {...props} />;
+  return <View className={cn('flex flex-row items-center px-4', className)} {...props} />;
 }
 
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle };

@@ -80,7 +80,7 @@ function EditForm({ profile, initialInstitution, initialField }: {
       saved = true;
       const current = await refresh();
       if (!current || current.id !== updated.id) throw new Error('Refresh incomplete');
-      if (mounted.current) router.replace('/account');
+      if (mounted.current) router.dismissTo('/account');
     } catch (cause) {
       if (mounted.current) setError(saved ? 'Your changes were saved, but we couldn’t reload your profile. Check your connection and retry Save.' : friendlyError(cause));
     } finally { inFlight.current = false; if (mounted.current) setBusy(false); }
@@ -112,7 +112,7 @@ function EditForm({ profile, initialInstitution, initialField }: {
     <Text variant="muted">Profile photos will be available in a later update.</Text>
     {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
     <Button loading={busy} onPress={() => void save()}><Text>{busy ? 'Saving changes…' : 'Save changes'}</Text></Button>
-    <Button variant="ghost" disabled={busy} onPress={() => router.replace('/account')}><Text>Cancel</Text></Button>
+    <Button variant="ghost" disabled={busy} onPress={() => router.dismissTo('/account')}><Text>Cancel</Text></Button>
   </Frame>;
 }
 
@@ -125,7 +125,7 @@ export function EditProfileScreen({ profile }: { profile: Profile }) {
       <Text>We couldn’t load your current study details. Retry before editing so nothing is overwritten.</Text>
       <Button onPress={references.retry}><Text>Retry loading details</Text></Button>
     </>}
-    <Button variant="ghost" onPress={() => router.replace('/account')}><Text>Back to profile</Text></Button>
+    <Button variant="ghost" onPress={() => router.dismissTo('/account')}><Text>Back to profile</Text></Button>
   </Frame>;
   return <EditForm profile={profile} initialInstitution={references.data?.institution ?? null} initialField={references.data?.field ?? null} />;
 }
