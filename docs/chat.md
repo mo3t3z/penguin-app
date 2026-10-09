@@ -1,9 +1,42 @@
 # Sprint 6A: private chat foundation
 
-Status: code and one migration in the repository. The migration has NOT been applied
-to the hosted project. It has been applied to a disposable local database, where
-`tests/chat-integration.sql` and `tests/chat-concurrency.sh` both passed (2026-10-09,
-Supabase Postgres 17.11 image). No dependency was added. There is no live delivery yet; that is Sprint 6B.
+Status: deployed to the hosted development project. No dependency was added. There is
+no live delivery yet; that is Sprint 6B.
+
+## Deployment status
+
+| Item | State |
+|---|---|
+| Local verification | PASS on 2026-10-09: `tests/chat-integration.sql` (72 assertions) and `tests/chat-concurrency.sh` (18 checks) on a disposable Supabase Postgres 17.11 container |
+| Hosted deployment | Applied on 2026-10-09 to project `utdwgmvdhghmephbvxvj` through the dashboard SQL editor, from commit `64481d6`, unmodified. Result: "Success. No rows returned" |
+| Hosted catalog verification | PASS on 2026-10-09 (details below) |
+| Hosted anonymous-access probes | PASS on 2026-10-09: reads of all four tables, all five client functions, one internal helper and a direct insert into `messages` were refused for the anonymous role |
+| Authenticated account tests on the hosted project | PENDING. Messaging between real accounts, third-account denial and blocking have not been exercised there |
+| Migration history | PENDING. Version `20261010120000` is not recorded in `supabase_migrations.schema_migrations`, because the SQL editor was used. Repair it before the next `supabase db push` (see below) |
+| Android device acceptance | DEFERRED (see `docs/android-acceptance-checklist.md`) |
+
+Hosted catalog verification read these facts from the database itself:
+
+- Row-level security is enabled on `conversations`, `messages`, `conversation_reads` and
+  `user_blocks`.
+- `authenticated` has column-level `SELECT` on the four tables and `DELETE` on
+  `user_blocks`, and nothing else. `anon` and `PUBLIC` have no privilege on them.
+- Five policies exist, all for `authenticated`.
+- The five client functions are executable by `authenticated` and not by `anon`; the six
+  internal helpers by neither. All eleven are owned by `postgres` with an empty search path.
+
+The project is on the Free plan and has no database backups.
+
+### Pending: migration history repair
+
+Do not run the migration again; it would fail with "already exists". Record it instead,
+with the official CLI, from a machine that is logged in and linked to the project:
+
+1. `supabase migration list --linked` and confirm `20261010120000` has a LOCAL value and
+   an empty REMOTE value, and that the eight earlier versions appear in both columns.
+2. `supabase migration repair --status applied 20261010120000 --linked`. This inserts a
+   record in the history table and does not execute the migration.
+3. `supabase migration list --linked` again and confirm all nine versions match.
 
 ## What is included
 
@@ -93,7 +126,8 @@ counted. To change a limit, replace `penguin_chat_message_limit_per_minute()` or
 
 ## Deployment (manual)
 
-Nothing here was run for you.
+These are the steps for any further environment. The hosted development project is
+already done (see "Deployment status"); do not repeat them there.
 
 1. Review `supabase/migrations/20261010120000_private_chat_foundation.sql`. It only
    creates new objects and runs in one transaction.
