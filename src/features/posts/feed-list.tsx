@@ -12,14 +12,13 @@ import { colors } from '@/theme/tokens';
 import type { FeedPost } from './feed';
 import { postPublishedEvents } from './feed-events';
 import { PostCard } from './post-card';
-import { signedMediaMemoryCache } from './private-media';
 import { usePostsFeed } from './use-feed';
 
 // Figma "Skeleton loader / Feed": a borderless card with an avatar, text lines, an
 // image block and three action pills.
-function FeedSkeleton() {
+export function FeedSkeleton({ count = 2 }: { count?: number }) {
   return <View className="gap-5" accessibilityLabel="Loading posts" accessibilityState={{ busy: true }}>
-    {[0, 1].map((item) => <View key={item} className="gap-[18px] rounded-lg bg-card p-4">
+    {Array.from({ length: count }, (_, item) => <View key={item} className="gap-[18px] rounded-lg bg-card p-4">
       <View className="flex-row items-center gap-3">
         <Skeleton className="size-10 rounded-full" />
         <View className="gap-2"><Skeleton className="h-3 w-[134px] rounded-full" /><Skeleton className="h-2.5 w-[90px] rounded-full" /></View>
@@ -51,6 +50,7 @@ function ItemSeparator() {
 
 const keyExtractor = (item: FeedPost) => item.id;
 const feedViewabilityConfig = { itemVisiblePercentThreshold: 15, minimumViewTime: 100 };
+const noPosts: FeedPost[] = [];
 
 function sameIds(left: ReadonlySet<string>, right: ReadonlySet<string>) {
   if (left.size !== right.size) return false;
@@ -58,7 +58,19 @@ function sameIds(left: ReadonlySet<string>, right: ReadonlySet<string>) {
   return true;
 }
 
-export function FeedList({ header }: { header?: ReactElement }) {
+type FeedListProps = {
+  header?: ReactElement;
+  // Limits the list to one student's posts (Profile tab, student profile).
+  authorId?: string | null;
+  // Shown instead of the default empty feed when there are no posts.
+  emptyState?: ReactElement;
+  // Shown under the header in place of the posts (a profile's About tab). The
+  // loaded posts are kept, so switching back does not reload them.
+  replacement?: ReactElement;
+  onOpenAuthor?: (authorId: string) => void;
+};
+
+export function FeedList({ header, authorId = null, emptyState, replacement, onOpenAuthor }: FeedListProps) {
   const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const { scheme } = usePenguinTheme();
@@ -66,13 +78,9 @@ export function FeedList({ header }: { header?: ReactElement }) {
   const {
     status, items, nextCursor, loadingMore, error, errorKind,
     likesByPostId, commentCountsByPostId, refresh: refreshFeed, loadMore: loadMoreFeed, toggleLike,
-  } = usePostsFeed();
+  } = usePostsFeed({ authorId });
   const [refreshing, setRefreshing] = useState(false);
   const [visiblePostIds, setVisiblePostIds] = useState<ReadonlySet<string>>(() => new Set());
-  useEffect(() => {
-    signedMediaMemoryCache.activateUser(userId);
-    return () => signedMediaMemoryCache.activateUser(null);
-  }, [userId]);
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<FeedPost>[] }) => {
     const next = new Set(viewableItems.filter((token) => token.isViewable).map((token) => token.item.id));
     setVisiblePostIds((current) => sameIds(current, next) ? current : next);
@@ -83,13 +91,15 @@ export function FeedList({ header }: { header?: ReactElement }) {
     try { await refreshFeed(); }
     finally { setRefreshing(false); }
   }, [refreshFeed, refreshing]);
-  // A post published by this account refreshes the mounted feed and returns to the
-  // top, where the new post appears. Existing posts stay mounted while it loads.
+  // A post published by this account refreshes every mounted list that can contain
+  // it (the main feed and the author's own posts) and returns to the top, where the
+  // new post appears. Existing posts stay mounted while it loads.
   useEffect(() => postPublishedEvents.subscribe((event) => {
     if (!userId || event.userId !== userId) return;
+    if (authorId && authorId !== userId) return;
     list.current?.scrollToOffset({ offset: 0, animated: false });
     void refresh();
-  }), [refresh, userId]);
+  }), [authorId, refresh, userId]);
   const loadMore = useCallback(() => {
     if (nextCursor && !loadingMore) void loadMoreFeed();
   }, [loadMoreFeed, loadingMore, nextCursor]);
@@ -103,14 +113,15 @@ export function FeedList({ header }: { header?: ReactElement }) {
     commentCount={commentCountsByPostId[item.id]}
     onToggleLike={toggleLike}
     onOpenComments={openComments}
-  />, [commentCountsByPostId, likesByPostId, openComments, toggleLike, visiblePostIds]);
+    onOpenAuthor={onOpenAuthor}
+  />, [commentCountsByPostId, likesByPostId, onOpenAuthor, openComments, toggleLike, visiblePostIds]);
   const extraData = useMemo(
     () => ({ commentCountsByPostId, likesByPostId, visiblePostIds }),
     [commentCountsByPostId, likesByPostId, visiblePostIds],
   );
 
   const initialLoading = status === 'idle' || status === 'loading';
-  const empty = initialLoading ? <FeedSkeleton />
+  const empty = initialLoading ? <FeedSkeleton count={authorId ? 1 : 2} />
     : status === 'error' ? <StatePanel
       icon={WifiOff}
       title="Posts couldn’t load"
@@ -118,7 +129,7 @@ export function FeedList({ header }: { header?: ReactElement }) {
       live
       actionLabel="Try again"
       onAction={() => void refreshFeed()}
-    /> : <EmptyFeed />;
+    /> : emptyState ?? <EmptyFeed />;
   const footer = loadingMore ? <View className="items-center py-5" accessibilityLabel="Loading more posts" accessibilityState={{ busy: true }}>
     <Skeleton className="h-2.5 w-24 rounded-full" />
   </View> : error && items.length ? <View className="gap-3 pt-5">
@@ -134,15 +145,15 @@ export function FeedList({ header }: { header?: ReactElement }) {
     ref={list}
     className="flex-1 bg-background"
     contentContainerClassName="px-4 pb-6"
-    data={items}
+    data={replacement ? noPosts : items}
     renderItem={renderPost}
     extraData={extraData}
     keyExtractor={keyExtractor}
     ListHeaderComponent={header ?? null}
     ListHeaderComponentStyle={header ? { marginBottom: 20 } : undefined}
     ItemSeparatorComponent={ItemSeparator}
-    ListEmptyComponent={empty}
-    ListFooterComponent={footer}
+    ListEmptyComponent={replacement ?? empty}
+    ListFooterComponent={replacement ? null : footer}
     refreshControl={<RefreshControl
       refreshing={refreshing}
       onRefresh={() => void refresh()}
@@ -150,7 +161,7 @@ export function FeedList({ header }: { header?: ReactElement }) {
       tintColor={colors[scheme].primary}
       progressBackgroundColor={colors[scheme].card}
     />}
-    onEndReached={loadMore}
+    onEndReached={replacement ? undefined : loadMore}
     onEndReachedThreshold={0.4}
     onViewableItemsChanged={onViewableItemsChanged}
     viewabilityConfig={feedViewabilityConfig}
@@ -158,6 +169,6 @@ export function FeedList({ header }: { header?: ReactElement }) {
     maxToRenderPerBatch={6}
     windowSize={7}
     keyboardShouldPersistTaps="handled"
-    accessibilityLabel="Student posts feed"
+    accessibilityLabel={authorId ? 'Student posts' : 'Student posts feed'}
   />;
 }

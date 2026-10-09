@@ -22,6 +22,10 @@ import { InfoRow } from '@/components/forms/info-row';
 import { SelectorOption } from '@/components/forms/selector-option';
 import { PasswordField } from '@/components/ui/password-field';
 import { OnboardingProgress } from '@/features/onboarding/progress';
+import { SegmentedTabs } from '@/components/navigation/segmented-tabs';
+import { ProfileAbout } from '@/features/profile/profile-about';
+import { ProfileHeader } from '@/features/profile/profile-header';
+import type { PublicProfile } from '@/features/profile/service';
 import type { FeedPost } from '@/features/posts/feed';
 import { usePenguinTheme } from '@/theme/provider';
 import { colors, avatarSizes } from '@/theme/tokens';
@@ -32,6 +36,18 @@ const previewPost: FeedPost = {
   author: { id: 'preview-author', username: 'aminay', display_name: 'Amina Yusuf', avatar_url: null },
   media: [],
 };
+
+const previewProfile: PublicProfile = {
+  id: 'preview-author', username: 'mayac', display_name: 'Maya Chen', avatar_url: null, institution_id: null, field_id: null,
+  study_level: 'undergraduate', bio: 'CS student, curious builder. Usually in the library or turning an idea into a tiny app.',
+  created_at: '2026-09-15T12:00:00.000000+00:00',
+};
+const previewStudies = {
+  loading: false, failed: false, retry: () => {},
+  institution: { id: 'i', name: 'Northbridge University', slug: 'northbridge', country: 'GB', city: 'Bristol', created_at: '' },
+  field: { id: 'f', name: 'Computer Science', slug: 'computer-science', created_at: '' },
+};
+const previewTabs = [{ key: 'posts', label: 'Posts' }, { key: 'about', label: 'About' }] as const;
 
 function Section({ number, title, children }: React.PropsWithChildren<{ number: string; title: string }>) {
   return <View className="gap-5">
@@ -47,6 +63,7 @@ export default function ComponentGallery() {
   const [presses, setPresses] = useState(0);
   const [liked, setLiked] = useState(false);
   const [option, setOption] = useState(0);
+  const [profileTab, setProfileTab] = useState<'posts' | 'about'>('posts');
   const [secret, setSecret] = useState('');
   const palette = colors[scheme];
   return <SafeAreaView className="flex-1 bg-background">
@@ -140,6 +157,11 @@ export default function ComponentGallery() {
             <View className="flex-row flex-wrap gap-2">{(['secondary','campus','subject','success','warning','destructive','outline'] as const).map(variant => <Badge key={variant} variant={variant}><Text>{variant === 'secondary' ? 'Neutral' : variant}</Text></Badge>)}</View>
             <Separator />
             <View className="flex-row items-center gap-4" style={{ height: 28 }}><Text variant="small">One</Text><Separator orientation="vertical" /><Text variant="small">Another</Text></View>
+          </Section>
+          <Section number="06b" title="Profile">
+            <ProfileHeader profile={previewProfile} studies={previewStudies} own />
+            <SegmentedTabs tabs={previewTabs} value={profileTab} onChange={setProfileTab} />
+            {profileTab === 'about' ? <ProfileAbout profile={previewProfile} studies={previewStudies} /> : <Text variant="muted">Posts appear here.</Text>}
           </Section>
           <Section number="07" title="Good things take a moment">
             <View accessibilityLabel="Loading preview" accessibilityState={{ busy: true }} className="gap-4 rounded-lg border border-border p-5">

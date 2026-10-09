@@ -1,26 +1,40 @@
-import { useCallback, useRef, useState, type PropsWithChildren } from 'react';
+import { useCallback, useRef, useState, type PropsWithChildren, type ReactNode } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { BookOpen, Building2, ChevronDown, GraduationCap } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { InfoRow } from '@/components/forms/info-row';
+import { TopBar } from '@/components/navigation/top-bar';
+import { OptionSheet } from '@/components/sheets/option-sheet';
+import { SelectorSheet } from '@/components/sheets/selector-sheet';
+import { UserAvatar } from '@/components/social/user-avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form-field';
+import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import type { Profile, StudyLevel } from '@/lib/database.types';
 import { UsernameField } from '@/features/onboarding/username-field';
-import { SelectorSheet } from '@/components/sheets/selector-sheet';
 import type { Selection } from '@/features/onboarding/search-selection';
+import { BIO_LIMIT, bioCounter, isBioTooLong, profileDisplayName } from './profile-format';
 import { useProfile } from './provider';
 import { studyLevels } from './study-levels';
 import { checkUsernameAvailability, isValidUsername, normalizeUsername, updateCurrentProfile } from './service';
 import { useProfileReferences } from './use-references';
 
-function Frame({ children }: PropsWithChildren) {
+const studyLevelOptions = (Object.entries(studyLevels) as [StudyLevel, string][]).map(([value, label]) => ({ value, label }));
+
+function leave() {
+  router.dismissTo('/account');
+}
+
+// Figma "Edit profile": title bar with back and Save, then a scrolling form.
+function Frame({ children, onBack, action }: PropsWithChildren<{ onBack: () => void; action?: ReactNode }>) {
   return <SafeAreaView className="flex-1 bg-background">
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerClassName="grow p-6">
-        <View className="w-full max-w-lg self-center gap-6"><Text variant="h1">Edit your profile.</Text>{children}</View>
+      <TopBar title="Edit profile" onBack={onBack} actions={action} />
+      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerClassName="grow px-5 pb-8 pt-2">
+        <View className="gap-5">{children}</View>
       </ScrollView>
     </KeyboardAvoidingView>
   </SafeAreaView>;
@@ -45,7 +59,7 @@ function EditForm({ profile, initialInstitution, initialField }: {
   const [institution, setInstitution] = useState(initialInstitution);
   const [field, setField] = useState(initialField);
   const [level, setLevel] = useState<StudyLevel | null>(profile.study_level);
-  const [selector, setSelector] = useState<'institution' | 'field' | null>(null);
+  const [selector, setSelector] = useState<'institution' | 'field' | 'level' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
@@ -63,7 +77,7 @@ function EditForm({ profile, initialInstitution, initialField }: {
     const canonical = normalizeUsername(username);
     if ([...name].length < 1 || [...name].length > 80) { setError('Use a display name between 1 and 80 characters.'); return; }
     if (!isValidUsername(canonical)) { setError('Use a valid username: 3–30 letters, numbers or underscores.'); return; }
-    if ([...bio].length > 500) { setError('Keep your bio to 500 characters or fewer.'); return; }
+    if (isBioTooLong(bio)) { setError('Keep your bio to 500 characters or fewer.'); return; }
     if (!institution || !field) { setError('Select an institution and field of study.'); return; }
     if (!level || !Object.hasOwn(studyLevels, level)) { setError('Select a valid study level.'); return; }
     inFlight.current = true; setBusy(true);
@@ -81,40 +95,45 @@ function EditForm({ profile, initialInstitution, initialField }: {
       saved = true;
       const current = await refresh();
       if (!current || current.id !== updated.id) throw new Error('Refresh incomplete');
-      if (mounted.current) router.dismissTo('/account');
+      if (mounted.current) leave();
     } catch (cause) {
       if (mounted.current) setError(saved ? 'Your changes were saved, but we couldn’t reload your profile. Check your connection and retry Save.' : friendlyError(cause));
     } finally { inFlight.current = false; if (mounted.current) setBusy(false); }
   }
 
-  return <Frame>
-    <Text variant="lead">Keep your student story up to date.</Text>
+  // The header Save and the bottom button run the same guarded save.
+  const cancel = () => { if (!inFlight.current) leave(); };
+  return <Frame onBack={cancel} action={<Button variant="ghost" size="sm" disabled={busy} accessibilityLabel="Save changes" onPress={() => void save()}>
+    <Text>Save</Text>
+  </Button>}>
+    <View className="items-center">
+      <UserAvatar name={profileDisplayName(displayName)} uri={profile.avatar_url} size="profile" />
+    </View>
     <FormField label="Display name" required value={displayName} onChangeText={setDisplayName} maxLength={80}
       autoComplete="name" autoCapitalize="words" editable={!busy} hint="Up to 80 characters." />
     <UsernameField value={username} currentUsername={profile.username} onChange={setUsername} disabled={busy} />
     <FormField label="Bio" variant="multiline" value={bio} onChangeText={setBio} editable={!busy}
-      hint={`${[...bio].length}/500 characters. Share what you’re studying, curious about or working toward.`}
-      error={[...bio].length > 500 ? 'Keep your bio to 500 characters or fewer.' : undefined} />
-    <Card><CardContent className="gap-4">
-      <Text variant="h3">Your studies</Text>
-      <Text variant="muted">Institution</Text><Text>{institution?.name ?? 'Choose an institution'}</Text>
-      <Button variant="outline" disabled={busy} onPress={() => setSelector('institution')}><Text>Change institution</Text></Button>
-      <Text variant="muted">Field of study</Text><Text>{field?.name ?? 'Choose a field of study'}</Text>
-      <Button variant="outline" disabled={busy} onPress={() => setSelector('field')}><Text>Change field of study</Text></Button>
-      <Text variant="small">Study level *</Text>
-      {(Object.entries(studyLevels) as [StudyLevel, string][]).map(([value, label]) => <Button key={value}
-        disabled={busy} className="justify-start" variant={level === value ? 'secondary' : 'outline'}
-        accessibilityState={{ selected: level === value }} onPress={() => setLevel(value)}>
-        <Text className="flex-1 shrink">{level === value ? '✓ ' : ''}{label}</Text>
-      </Button>)}
-    </CardContent></Card>
-    <Text variant="muted">Profile photos will be available in a later update.</Text>
+      placeholder="Share what you’re studying, curious about or working toward."
+      hint={bioCounter(bio)}
+      error={isBioTooLong(bio) ? `${bioCounter(bio)}. Keep your bio to ${BIO_LIMIT} characters or fewer.` : undefined} />
+    <Separator />
+    <View className="gap-3">
+      <Text variant="h4" accessibilityRole="header">Student details</Text>
+      <InfoRow icon={Building2} label="Institution · Tap to search" value={institution?.name ?? 'Choose an institution'}
+        editIcon={ChevronDown} editLabel="Change institution" disabled={busy} onEdit={() => setSelector('institution')} />
+      <InfoRow icon={BookOpen} label="Field of study · Tap to search" value={field?.name ?? 'Choose a field of study'}
+        editIcon={ChevronDown} editLabel="Change field of study" disabled={busy} onEdit={() => setSelector('field')} />
+      <InfoRow icon={GraduationCap} label="Study level" value={level ? studyLevels[level] : 'Choose a study level'}
+        editIcon={ChevronDown} editLabel="Change study level" disabled={busy} onEdit={() => setSelector('level')} />
+    </View>
     {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
     <Button loading={busy} onPress={() => void save()}><Text>{busy ? 'Saving changes…' : 'Save changes'}</Text></Button>
-    <Button variant="ghost" disabled={busy} onPress={() => router.dismissTo('/account')}><Text>Cancel</Text></Button>
-    <SelectorSheet kind={selector ?? 'institution'} visible={selector !== null && !busy}
+    <Button variant="ghost" disabled={busy} onPress={cancel}><Text>Cancel</Text></Button>
+    <SelectorSheet kind={selector === 'field' ? 'field' : 'institution'} visible={(selector === 'institution' || selector === 'field') && !busy}
       selected={selector === 'field' ? field : institution} onClose={() => setSelector(null)}
       onConfirm={value => { if (selector === 'field') setField(value); else setInstitution(value); setSelector(null); }} />
+    <OptionSheet visible={selector === 'level' && !busy} title="Study level" icon={GraduationCap} options={studyLevelOptions}
+      selected={level} onClose={() => setSelector(null)} onConfirm={value => { setLevel(value); setSelector(null); }} />
   </Frame>;
 }
 
@@ -122,12 +141,12 @@ export function EditProfileScreen({ profile }: { profile: Profile }) {
   // Keep initial references stable across the successful refresh; never reset a mounted draft.
   const [initial] = useState(profile);
   const references = useProfileReferences(initial.id, initial.institution_id, initial.field_id);
-  if (references.loading || references.failed) return <Frame>
-    {references.loading ? <><Text>Loading your current details…</Text><Skeleton className="h-12 w-full" /><Skeleton className="h-40 w-full" /></> : <>
+  if (references.loading || references.failed) return <Frame onBack={leave}>
+    {references.loading ? <><Text variant="muted">Loading your current details…</Text><Skeleton className="h-12 w-full" /><Skeleton className="h-40 w-full" /></> : <>
       <Text>We couldn’t load your current study details. Retry before editing so nothing is overwritten.</Text>
       <Button onPress={references.retry}><Text>Retry loading details</Text></Button>
     </>}
-    <Button variant="ghost" onPress={() => router.dismissTo('/account')}><Text>Back to profile</Text></Button>
+    <Button variant="ghost" onPress={leave}><Text>Back to profile</Text></Button>
   </Frame>;
   return <EditForm profile={profile} initialInstitution={references.data?.institution ?? null} initialField={references.data?.field ?? null} />;
 }

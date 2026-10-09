@@ -18,12 +18,14 @@ type PostCardProps = {
   commentCount?: CommentCountState;
   onToggleLike: (postId: string) => void;
   onOpenComments: (postId: string) => void;
+  // When set, the author's avatar and name open their profile.
+  onOpenAuthor?: (authorId: string) => void;
 };
 
 // 44px-high actions per Figma; the vertical hitSlop gives a 48px touch target.
 const actionHitSlop = { top: 2, bottom: 2 };
 
-function PostCardComponent({ post, visible, likeState, commentCount, onToggleLike, onOpenComments }: PostCardProps) {
+function PostCardComponent({ post, visible, likeState, commentCount, onToggleLike, onOpenComments, onOpenAuthor }: PostCardProps) {
   const name = post.author?.display_name?.trim() || 'Penguin student';
   const username = post.author?.username?.trim() || 'student';
   const avatar = post.author?.avatar_url?.trim() || null;
@@ -39,6 +41,7 @@ function PostCardComponent({ post, visible, likeState, commentCount, onToggleLik
       avatarUrl={avatar}
       time={relativePublicationTime(post.created_at)}
       timeAccessibilityLabel={publicationAccessibilityLabel(post.created_at)}
+      onPress={onOpenAuthor ? () => onOpenAuthor(post.author_id) : undefined}
     />
     <Text selectable className="text-metadata">{post.content}</Text>
     <PostMediaGrid media={post.media} visible={visible} />

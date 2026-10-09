@@ -13,7 +13,9 @@ import {
 } from './feed';
 import { getFeed } from './service';
 import { getPostLikeSummaries, likePost, unlikePost } from './likes-service';
+import { postLikeEvents } from './like-events';
 import {
+  applyPostLikeSync,
   markPostLikesUnavailable,
   mergePostLikeSummaries,
   optimisticPostLikeToggle,
@@ -36,7 +38,9 @@ const likesError = 'Likes are unavailable. Pull to refresh to try again.';
 const likeMutationError = 'Penguin could not update this like. Try again.';
 const commentsError = 'Comments are unavailable. Pull to refresh to try again.';
 
-export function usePostsFeed(pageSize = 20) {
+// authorId limits the list to one student's posts (Profile tab, student profile).
+// State is always scoped to the signed-in user, so switching account resets it.
+export function usePostsFeed({ pageSize = 20, authorId = null }: { pageSize?: number; authorId?: string | null } = {}) {
   if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 50) {
     throw new Error('Feed page size must be between 1 and 50.');
   }
@@ -53,6 +57,7 @@ export function usePostsFeed(pageSize = 20) {
   const likeMutations = useRef(new PostLikeMutationRegistry());
   const likeVersions = useRef(new Map<string, number>());
   const commentVersions = useRef(new Map<string, number>());
+  const likeSource = useRef({});
   const updateState = useCallback((updater: (current: FeedState) => FeedState) => {
     setState((current) => {
       const next = updater(current);
@@ -79,7 +84,7 @@ export function usePostsFeed(pageSize = 20) {
     if (append) loadingMore.current = true;
     updateState((current) => beginFeedLoad(current, userId, append));
     try {
-      const page = await getFeed({ cursor, limit: pageSize, signal: controller.signal });
+      const page = await getFeed({ cursor, limit: pageSize, signal: controller.signal, authorId });
       if (request !== generation.current) return;
       const postIds = page.items.map(({ id }) => id);
       const likeSnapshot = new Map(postIds.map((postId) => [postId, {
@@ -152,7 +157,7 @@ export function usePostsFeed(pageSize = 20) {
       requests.current.finish(requestKey);
       if (request === generation.current) loadingMore.current = false;
     }
-  }, [enabled, pageSize, updateState, userId]);
+  }, [authorId, enabled, pageSize, updateState, userId]);
 
   useEffect(() => {
     const requestControllers = controllers.current;
@@ -205,6 +210,19 @@ export function usePostsFeed(pageSize = 20) {
     });
   }), [enabled, updateState, userId]);
 
+  // Like changes made in another list showing the same post.
+  useEffect(() => postLikeEvents.subscribe((event) => {
+    if (!enabled || event.userId !== userId || event.source === likeSource.current) return;
+    if (!stateRef.current.likesByPostId[event.postId]) return;
+    // A summary request already in flight must not overwrite this newer value.
+    likeVersions.current.set(event.postId, (likeVersions.current.get(event.postId) ?? 0) + 1);
+    updateState((current) => {
+      if (current.userId !== userId) return current;
+      const likesByPostId = applyPostLikeSync(current.likesByPostId, event.postId, event);
+      return likesByPostId === current.likesByPostId ? current : { ...current, likesByPostId };
+    });
+  }), [enabled, updateState, userId]);
+
   const toggleLike = useCallback(async (postId: string) => {
     if (!enabled || !userId || !likeMutations.current.begin(userId, postId)) return;
     const current = stateRef.current;
@@ -223,6 +241,10 @@ export function usePostsFeed(pageSize = 20) {
         [postId]: optimisticPostLikeToggle(latest.likesByPostId[postId] ?? previous),
       },
     });
+    const optimistic = optimisticPostLikeToggle(previous);
+    if (optimistic.count !== null) {
+      postLikeEvents.publish({ userId, postId, count: optimistic.count, likedByMe: optimistic.likedByMe, source: likeSource.current });
+    }
     try {
       await (previous.likedByMe ? unlikePost(postId) : likePost(postId));
       if (account !== accountGeneration.current || version !== likeVersions.current.get(postId)) return;
@@ -237,6 +259,8 @@ export function usePostsFeed(pageSize = 20) {
         ...latest,
         likesByPostId: { ...latest.likesByPostId, [postId]: rollbackPostLike(previous, likeMutationError) },
       });
+      // Other lists return to the value from before the failed change.
+      postLikeEvents.publish({ userId, postId, count: previous.count, likedByMe: previous.likedByMe, source: likeSource.current });
     } finally {
       likeMutations.current.finish(userId, postId);
     }

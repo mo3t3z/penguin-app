@@ -1,5 +1,6 @@
+import { useCallback, useRef } from 'react';
 import { Pressable, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { SquarePen } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBar } from '@/components/navigation/top-bar';
@@ -10,6 +11,8 @@ import { FeedList } from '@/features/posts/feed-list';
 import { ProfileStatus } from '@/features/profile/profile-status';
 import { useProfile } from '@/features/profile/provider';
 import type { Profile } from '@/lib/database.types';
+
+const OPEN_PROFILE_INTERVAL = 800;
 
 function greeting(hour = new Date().getHours()) {
   return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -35,11 +38,25 @@ function FeedIntroduction({ profile }: { profile: Profile }) {
   </View>;
 }
 
+function HomeFeed({ profile }: { profile: Profile }) {
+  const lastOpened = useRef(0);
+  // Your own posts lead to the Profile tab; another student's open a profile
+  // screen above the tabs, so Home stays mounted underneath.
+  const openAuthor = useCallback((authorId: string) => {
+    if (authorId === profile.id) { router.navigate('/account'); return; }
+    const now = Date.now();
+    if (now - lastOpened.current < OPEN_PROFILE_INTERVAL) return;
+    lastOpened.current = now;
+    router.push({ pathname: '/students/[id]', params: { id: authorId } });
+  }, [profile.id]);
+  return <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+    <TopBar />
+    <FeedList header={<FeedIntroduction profile={profile} />} onOpenAuthor={openAuthor} />
+  </SafeAreaView>;
+}
+
 export default function Home() {
   const { state } = useProfile();
   if (state.status !== 'ready') return <ProfileStatus />;
-  return <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-    <TopBar />
-    <FeedList key={state.profile.id} header={<FeedIntroduction profile={state.profile} />} />
-  </SafeAreaView>;
+  return <HomeFeed key={state.profile.id} profile={state.profile} />;
 }

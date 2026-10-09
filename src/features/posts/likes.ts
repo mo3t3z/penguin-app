@@ -81,6 +81,20 @@ export function retainPostLikeStates(current: PostLikesById, postIds: readonly s
   return count === Object.keys(current).length ? current : retained;
 }
 
+// Applies a like change made in another list. Posts this list does not hold, and
+// posts with a local change still in flight, are left untouched.
+export function applyPostLikeSync(
+  current: PostLikesById,
+  postId: string,
+  sync: { count: number; likedByMe: boolean },
+): PostLikesById {
+  const existing = current[postId];
+  if (!existing || existing.pending) return current;
+  const candidate: PostLikeState = { count: sync.count, likedByMe: sync.likedByMe, pending: false, error: null };
+  if (sameLikeState(existing, candidate)) return current;
+  return { ...current, [postId]: candidate };
+}
+
 export function optimisticPostLikeToggle(current: PostLikeState): PostLikeState {
   if (current.count === null || current.pending) return current;
   return {

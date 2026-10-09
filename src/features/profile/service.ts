@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
-import type { ProfileUpdate } from '@/lib/database.types';
+import type { Profile, ProfileUpdate } from '@/lib/database.types';
+import { requireUuid } from '@/features/posts/validation';
 
 function client() {
   if (!supabase) throw new Error('Profile data is not configured.');
@@ -18,6 +19,20 @@ export async function getCurrentProfile() {
   const { data, error } = await client().from('profiles').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
   return data; // null is a missing profile, not completed onboarding.
+}
+
+// What one student may see of another: presentation fields only, never account
+// state such as onboarding progress.
+const PUBLIC_PROFILE = 'id,username,display_name,avatar_url,institution_id,field_id,study_level,bio,created_at' as const;
+export type PublicProfile = Pick<Profile,
+  'id' | 'username' | 'display_name' | 'avatar_url' | 'institution_id' | 'field_id' | 'study_level' | 'bio' | 'created_at'>;
+
+// Read-only lookup for a student profile screen. Row-level security decides which
+// profiles the signed-in user can read; null means not found or not visible.
+export async function getProfileById(id: string): Promise<PublicProfile | null> {
+  const { data, error } = await client().from('profiles').select(PUBLIC_PROFILE).eq('id', requireUuid(id)).maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export const normalizeUsername = (username: string) => username.trim().toLowerCase();
