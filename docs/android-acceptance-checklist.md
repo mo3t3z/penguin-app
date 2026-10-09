@@ -37,3 +37,31 @@ Deferred:
 - [ ] DEFERRED: Android back from Discover goes to Home; nothing sits under the gesture bar.
 - [ ] DEFERRED: Light and dark mode are both legible.
 - [ ] DEFERRED: TalkBack announces the field, clear button, rows and state changes.
+
+## Sprint 5B: Discover (post search)
+
+Nothing in this sprint has been run on a device yet.
+
+- [ ] DEFERRED: Students and Posts tabs appear under the search field; Students is selected first.
+- [ ] DEFERRED: Posts scope with no text shows the "Find posts" invitation and loads nothing.
+- [ ] DEFERRED: Live post search returns posts containing the word, in any letter case.
+- [ ] DEFERRED: Two words match posts containing both, in either order; a post with only one does not appear.
+- [ ] DEFERRED: Accented and Arabic words match.
+- [ ] DEFERRED: One character shows the "at least 2" hint and sends no request.
+- [ ] DEFERRED: Results are newest first and more than 20 matches load further pages with no duplicates.
+- [ ] DEFERRED: Image posts in results show their images.
+- [ ] DEFERRED: Liking a result updates its count, and the same post on Home shows the change.
+- [ ] DEFERRED: Opening comments from a result works; adding a comment updates the count on return.
+- [ ] DEFERRED: Tapping an author opens their profile; tapping your own post opens the Profile tab.
+- [ ] DEFERRED: Returning from comments or a profile keeps the post results and scroll position.
+- [ ] DEFERRED: A query with no matching posts shows "No matches just yet"; "Clear search" empties the field.
+- [ ] DEFERRED: Airplane mode shows "Posts couldn’t load"; "Try again" recovers.
+- [ ] DEFERRED: Fast typing on Posts shows results for the latest query only.
+- [ ] DEFERRED: Students → Posts → Students with the same text restores student results and scroll without reloading.
+- [ ] DEFERRED: Posts → Students → Posts with the same text restores post results and scroll without reloading.
+- [ ] DEFERRED: Changing the text on one scope, then switching, loads the other scope for the new text.
+- [ ] DEFERRED: Publishing a post while a post search is open does not refresh or scroll the search; Home and My profile still show the new post at the top.
+- [ ] DEFERRED: Home scroll position and images are unchanged after scrolling post results.
+- [ ] DEFERRED: Log out and log in as another account; both scopes are empty.
+- [ ] DEFERRED: Dragging post results dismisses the keyboard; nothing sits under the gesture bar.
+- [ ] DEFERRED: Light and dark mode are both legible; TalkBack announces the tabs and their selected state.

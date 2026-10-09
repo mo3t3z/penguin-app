@@ -20,6 +20,7 @@ import {
   failedStudentSearch,
   isStudentCursor,
   mergeStudentResults,
+  shouldStartStudentSearch,
   studentDetail,
   studentSearchStatus,
 } from '../src/features/discover/student-search.ts';
@@ -158,7 +159,9 @@ test('the hook debounces, cancels superseded requests and scopes results to the 
   assert.match(hook, /const token = `\$\{userId\}:\$\{attempt\}:\$\{key\}`;/);
   assert.match(hook, /immediate\.current \? 0 : SEARCH_DEBOUNCE_MS/);
   assert.match(hook, /clearTimeout\(timer\);\s*controller\.abort\(\);/);
-  assert.match(hook, /if \(!searchable\) return;/);
+  assert.match(hook, /if \(!shouldStartStudentSearch\(searchable, active, loadedToken\.current, token\)\) return;/);
+  assert.equal(shouldStartStudentSearch(false, true, null, 't1'), false);
+  assert.equal(shouldStartStudentSearch(true, true, null, 't1'), true);
 });
 
 test('search text and results are never logged', () => {
@@ -184,5 +187,7 @@ test('the Discover route is keyed by account and opens profiles like Home does',
   assert.match(screen, /if \(studentId === profile\.id\) \{ router\.navigate\('\/account'\); return; \}/);
   assert.match(screen, /router\.push\(\{ pathname: '\/students\/\[id\]', params: \{ id: studentId \} \}\)/);
   assert.match(screen, /maxLength=\{SEARCH_MAX_LENGTH\}/);
-  assert.doesNotMatch(screen, /useFocusEffect|Posts|Communities|Institutions/);
+  assert.doesNotMatch(screen, /useFocusEffect|Communities|Institutions/);
+  const scopes = read('../src/features/discover/discover-scopes.ts');
+  assert.deepEqual([...scopes.matchAll(/\{ key: '([a-z]+)', label: '([A-Za-z]+)' \}/g)].map((match) => match[2]), ['Students', 'Posts']);
 });

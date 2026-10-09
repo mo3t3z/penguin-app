@@ -39,8 +39,13 @@ const likeMutationError = 'Penguin could not update this like. Try again.';
 const commentsError = 'Comments are unavailable. Pull to refresh to try again.';
 
 // authorId limits the list to one student's posts (Profile tab, student profile).
+// search (a canonical search key) limits it to posts containing every word.
 // State is always scoped to the signed-in user, so switching account resets it.
-export function usePostsFeed({ pageSize = 20, authorId = null }: { pageSize?: number; authorId?: string | null } = {}) {
+export function usePostsFeed({ pageSize = 20, authorId = null, search = null }: {
+  pageSize?: number;
+  authorId?: string | null;
+  search?: string | null;
+} = {}) {
   if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 50) {
     throw new Error('Feed page size must be between 1 and 50.');
   }
@@ -84,7 +89,7 @@ export function usePostsFeed({ pageSize = 20, authorId = null }: { pageSize?: nu
     if (append) loadingMore.current = true;
     updateState((current) => beginFeedLoad(current, userId, append));
     try {
-      const page = await getFeed({ cursor, limit: pageSize, signal: controller.signal, authorId });
+      const page = await getFeed({ cursor, limit: pageSize, signal: controller.signal, authorId, search });
       if (request !== generation.current) return;
       const postIds = page.items.map(({ id }) => id);
       const likeSnapshot = new Map(postIds.map((postId) => [postId, {
@@ -157,7 +162,7 @@ export function usePostsFeed({ pageSize = 20, authorId = null }: { pageSize?: nu
       requests.current.finish(requestKey);
       if (request === generation.current) loadingMore.current = false;
     }
-  }, [authorId, enabled, pageSize, updateState, userId]);
+  }, [authorId, enabled, pageSize, search, updateState, userId]);
 
   useEffect(() => {
     const requestControllers = controllers.current;

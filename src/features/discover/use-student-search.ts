@@ -5,9 +5,11 @@ import { searchStudents } from './service';
 import {
   appendStudentPage,
   beginStudentLoadMore,
+  cancelStudentLoadMore,
   completedStudentSearch,
   failStudentLoadMore,
   failedStudentSearch,
+  shouldStartStudentSearch,
   studentSearchStatus,
   type StudentSearchResult,
 } from './student-search';
@@ -16,8 +18,12 @@ const noStudents: StudentSearchResult['items'] = [];
 
 // Debounced student search for the signed-in user. Each result carries the token
 // of the account, attempt and search that produced it, so a response for an older
-// search or another account is never shown.
-export function useStudentSearch(query: string, pageSize = 20) {
+// search or another account is never shown. While `active` is false (another
+// Discover scope is showing) nothing is requested and the held result is kept.
+export function useStudentSearch(query: string, { active = true, pageSize = 20 }: {
+  active?: boolean;
+  pageSize?: number;
+} = {}) {
   const { session, loading: authLoading, recovery } = useAuth();
   const userId = session?.user.id ?? null;
   const enabled = Boolean(userId) && !authLoading && !recovery;
@@ -26,37 +32,54 @@ export function useStudentSearch(query: string, pageSize = 20) {
   const [attempt, setAttempt] = useState(0);
   const token = `${userId}:${attempt}:${key}`;
   const [result, setResult] = useState<StudentSearchResult | null>(null);
+  const loadedToken = useRef<string | null>(null);
   const immediate = useRef(false);
   const moreControllers = useRef(new Set<AbortController>());
   const moreInFlight = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!searchable) return;
+    if (!shouldStartStudentSearch(searchable, active, loadedToken.current, token)) return;
     const pendingPages = moreControllers.current;
     const controller = new AbortController();
-    let active = true;
+    let current = true;
     // Typing waits for a pause; "Try again" does not.
     const delay = immediate.current ? 0 : SEARCH_DEBOUNCE_MS;
     immediate.current = false;
     const timer = setTimeout(() => {
       searchStudents({ terms: termsFromKey(key), limit: pageSize, signal: controller.signal })
-        .then((page) => { if (active) setResult(completedStudentSearch(token, page)); })
-        .catch(() => { if (active) setResult(failedStudentSearch(token)); });
+        .then((page) => {
+          if (!current) return;
+          loadedToken.current = token;
+          setResult(completedStudentSearch(token, page));
+        })
+        .catch(() => {
+          if (!current) return;
+          loadedToken.current = token;
+          setResult(failedStudentSearch(token));
+        });
     }, delay);
     return () => {
-      active = false;
+      current = false;
       clearTimeout(timer);
       controller.abort();
       pendingPages.forEach((pending) => pending.abort());
       pendingPages.clear();
     };
-  }, [key, pageSize, searchable, token]);
+  }, [active, key, pageSize, searchable, token]);
 
-  const current = searchable && result?.token === token ? result : null;
-  const nextCursor = current && !current.failed ? current.nextCursor : null;
+  // Pausing cancels a page that is still loading.
+  useEffect(() => {
+    if (active) return;
+    const pendingPages = moreControllers.current;
+    pendingPages.forEach((pending) => pending.abort());
+    pendingPages.clear();
+  }, [active]);
+
+  const held = searchable && result?.token === token ? result : null;
+  const nextCursor = held && !held.failed ? held.nextCursor : null;
 
   const loadMore = useCallback(() => {
-    if (!nextCursor || moreInFlight.current === token) return;
+    if (!active || !nextCursor || moreInFlight.current === token) return;
     moreInFlight.current = token;
     const controller = new AbortController();
     const pendingPages = moreControllers.current;
@@ -64,12 +87,14 @@ export function useStudentSearch(query: string, pageSize = 20) {
     setResult((latest) => beginStudentLoadMore(latest, token));
     searchStudents({ terms: termsFromKey(key), cursor: nextCursor, limit: pageSize, signal: controller.signal })
       .then((page) => setResult((latest) => appendStudentPage(latest, token, page)))
-      .catch(() => setResult((latest) => failStudentLoadMore(latest, token)))
+      .catch(() => setResult((latest) => controller.signal.aborted
+        ? cancelStudentLoadMore(latest, token)
+        : failStudentLoadMore(latest, token)))
       .finally(() => {
         pendingPages.delete(controller);
         if (moreInFlight.current === token) moreInFlight.current = null;
       });
-  }, [key, nextCursor, pageSize, token]);
+  }, [active, key, nextCursor, pageSize, token]);
 
   const retry = useCallback(() => {
     immediate.current = true;
@@ -78,10 +103,10 @@ export function useStudentSearch(query: string, pageSize = 20) {
 
   return {
     status: studentSearchStatus(searchable, token, result),
-    items: current?.items ?? noStudents,
+    items: held?.items ?? noStudents,
     hasMore: Boolean(nextCursor),
-    loadingMore: current?.loadingMore ?? false,
-    loadMoreFailed: current?.loadMoreFailed ?? false,
+    loadingMore: held?.loadingMore ?? false,
+    loadMoreFailed: held?.loadMoreFailed ?? false,
     loadMore,
     retry,
   };

@@ -68,9 +68,14 @@ type FeedListProps = {
   // loaded posts are kept, so switching back does not reload them.
   replacement?: ReactElement;
   onOpenAuthor?: (authorId: string) => void;
+  // Limits the list to posts matching a canonical search key (Discover).
+  search?: string | null;
+  // A hidden list keeps its posts and scroll position but asks for nothing: no
+  // further pages and no image URLs.
+  paused?: boolean;
 };
 
-export function FeedList({ header, authorId = null, emptyState, replacement, onOpenAuthor }: FeedListProps) {
+export function FeedList({ header, authorId = null, emptyState, replacement, onOpenAuthor, search = null, paused = false }: FeedListProps) {
   const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const { scheme } = usePenguinTheme();
@@ -78,7 +83,7 @@ export function FeedList({ header, authorId = null, emptyState, replacement, onO
   const {
     status, items, nextCursor, loadingMore, error, errorKind,
     likesByPostId, commentCountsByPostId, refresh: refreshFeed, loadMore: loadMoreFeed, toggleLike,
-  } = usePostsFeed({ authorId });
+  } = usePostsFeed({ authorId, search });
   const [refreshing, setRefreshing] = useState(false);
   const [visiblePostIds, setVisiblePostIds] = useState<ReadonlySet<string>>(() => new Set());
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<FeedPost>[] }) => {
@@ -93,13 +98,15 @@ export function FeedList({ header, authorId = null, emptyState, replacement, onO
   }, [refreshFeed, refreshing]);
   // A post published by this account refreshes every mounted list that can contain
   // it (the main feed and the author's own posts) and returns to the top, where the
-  // new post appears. Existing posts stay mounted while it loads.
+  // new post appears. Existing posts stay mounted while it loads. Search results
+  // are left as they are.
   useEffect(() => postPublishedEvents.subscribe((event) => {
     if (!userId || event.userId !== userId) return;
     if (authorId && authorId !== userId) return;
+    if (search) return;
     list.current?.scrollToOffset({ offset: 0, animated: false });
     void refresh();
-  }), [authorId, refresh, userId]);
+  }), [authorId, refresh, search, userId]);
   const loadMore = useCallback(() => {
     if (nextCursor && !loadingMore) void loadMoreFeed();
   }, [loadMoreFeed, loadingMore, nextCursor]);
@@ -108,16 +115,16 @@ export function FeedList({ header, authorId = null, emptyState, replacement, onO
   }, []);
   const renderPost = useCallback<ListRenderItem<FeedPost>>(({ item }) => <PostCard
     post={item}
-    visible={visiblePostIds.has(item.id)}
+    visible={!paused && visiblePostIds.has(item.id)}
     likeState={likesByPostId[item.id]}
     commentCount={commentCountsByPostId[item.id]}
     onToggleLike={toggleLike}
     onOpenComments={openComments}
     onOpenAuthor={onOpenAuthor}
-  />, [commentCountsByPostId, likesByPostId, onOpenAuthor, openComments, toggleLike, visiblePostIds]);
+  />, [commentCountsByPostId, likesByPostId, onOpenAuthor, openComments, paused, toggleLike, visiblePostIds]);
   const extraData = useMemo(
-    () => ({ commentCountsByPostId, likesByPostId, visiblePostIds }),
-    [commentCountsByPostId, likesByPostId, visiblePostIds],
+    () => ({ commentCountsByPostId, likesByPostId, paused, visiblePostIds }),
+    [commentCountsByPostId, likesByPostId, paused, visiblePostIds],
   );
 
   const initialLoading = status === 'idle' || status === 'loading';
@@ -161,7 +168,7 @@ export function FeedList({ header, authorId = null, emptyState, replacement, onO
       tintColor={colors[scheme].primary}
       progressBackgroundColor={colors[scheme].card}
     />}
-    onEndReached={replacement ? undefined : loadMore}
+    onEndReached={replacement || paused ? undefined : loadMore}
     onEndReachedThreshold={0.4}
     onViewableItemsChanged={onViewableItemsChanged}
     viewabilityConfig={feedViewabilityConfig}
@@ -169,6 +176,7 @@ export function FeedList({ header, authorId = null, emptyState, replacement, onO
     maxToRenderPerBatch={6}
     windowSize={7}
     keyboardShouldPersistTaps="handled"
-    accessibilityLabel={authorId ? 'Student posts' : 'Student posts feed'}
+    keyboardDismissMode={search ? 'on-drag' : 'none'}
+    accessibilityLabel={search ? 'Post search results' : authorId ? 'Student posts' : 'Student posts feed'}
   />;
 }

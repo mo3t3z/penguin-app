@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { postSearchPatterns, termsFromKey } from '@/features/discover/search-query';
 import { feedCursorFilter, normalizePostContent, requireUuid } from './validation';
 import { buildFeedPage, type FeedCursor, type FeedPost } from './feed';
 
@@ -65,11 +66,14 @@ export async function getPost(id: string) {
 }
 // With authorId the same newest-first cursor pagination is limited to one student's
 // posts; row-level security still decides which posts the caller may read.
-export async function getFeed({ cursor, limit = 20, signal, authorId }: {
+// With search (a canonical search key) only posts whose text contains every word
+// are returned, in the same order and with the same cursor.
+export async function getFeed({ cursor, limit = 20, signal, authorId, search }: {
   cursor?: FeedCursor;
   limit?: number;
   signal?: AbortSignal;
   authorId?: string | null;
+  search?: string | null;
 } = {}) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error('Feed limit must be between 1 and 50.');
   let query = client().from('posts').select(POST_CARD)
@@ -77,6 +81,7 @@ export async function getFeed({ cursor, limit = 20, signal, authorId }: {
     .eq('media.status', 'ready')
     .order('position', { referencedTable: 'media' }).limit(limit + 1);
   if (authorId) query = query.eq('author_id', requireUuid(authorId));
+  if (search) for (const pattern of postSearchPatterns(termsFromKey(search))) query = query.ilike('content', pattern);
   if (cursor) query = query.or(feedCursorFilter(cursor));
   if (signal) query = query.abortSignal(signal);
   const { data, error } = await query;

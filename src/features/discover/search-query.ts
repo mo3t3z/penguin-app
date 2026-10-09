@@ -26,16 +26,27 @@ export function termsFromKey(key: string): string[] {
   return key ? key.split(' ') : [];
 }
 
-// One PostgREST `or` group per term; the groups are combined with AND, so every
-// word must appear in the display name or the username.
-export function studentSearchFilters(terms: readonly string[]): string[] {
+// Filters are only ever built from terms that normalisation could have produced.
+function requireTerms(terms: readonly string[]): readonly string[] {
   if (!Array.isArray(terms) || terms.length < 1 || terms.length > SEARCH_MAX_TERMS) {
     throw new Error('Invalid search.');
   }
-  return terms.map((term) => {
+  for (const term of terms) {
     if (typeof term !== 'string' || !WORD.test(term) || [...term].length > SEARCH_MAX_LENGTH) {
       throw new Error('Invalid search.');
     }
-    return `display_name.ilike.*${term}*,username.ilike.*${term}*`;
-  });
+  }
+  return terms;
+}
+
+// One PostgREST `or` group per term; the groups are combined with AND, so every
+// word must appear in the display name or the username.
+export function studentSearchFilters(terms: readonly string[]): string[] {
+  return requireTerms(terms).map((term) => `display_name.ilike.*${term}*,username.ilike.*${term}*`);
+}
+
+// One ILIKE pattern per term for a single column; applied as separate filters, so
+// every word must appear in the post text.
+export function postSearchPatterns(terms: readonly string[]): string[] {
+  return requireTerms(terms).map((term) => `%${term}%`);
 }

@@ -71,8 +71,10 @@ test('author feed reuses the feed query with a validated author filter', () => {
 
 test('the feed hook passes the author through and keeps state scoped to the signed-in user', () => {
   const hook = read('../src/features/posts/use-feed.ts');
-  assert.match(hook, /getFeed\(\{ cursor, limit: pageSize, signal: controller\.signal, authorId \}\)/);
-  assert.match(hook, /\[authorId, enabled, pageSize, updateState, userId\]/);
+  assert.match(hook, /getFeed\(\{ cursor, limit: pageSize, signal: controller\.signal, authorId, search \}\)/);
+  assert.match(hook, /\[authorId, enabled, pageSize, search, updateState, userId\]/);
+  // Home and the profile lists pass no search, so their requests are unfiltered.
+  assert.match(hook, /usePostsFeed\(\{ pageSize = 20, authorId = null, search = null \}/);
   assert.match(hook, /const visible = enabled && state\.userId === userId \? state : initialFeedState\(\);/);
 });
 

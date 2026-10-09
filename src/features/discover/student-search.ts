@@ -71,6 +71,23 @@ export function appendStudentPage(current: StudentSearchResult | null, token: st
   };
 }
 
+// A page request that was cancelled (the pane was paused) is not a failure; the
+// next scroll to the end asks again.
+export function cancelStudentLoadMore(current: StudentSearchResult | null, token: string) {
+  return current?.token === token ? { ...current, loadingMore: false } : current;
+}
+
+// A search starts only for the active pane, and only when the answer for this
+// token is not already held. Returning to a pane with the same search refetches nothing.
+export function shouldStartStudentSearch(
+  searchable: boolean,
+  active: boolean,
+  loadedToken: string | null,
+  token: string,
+) {
+  return searchable && active && loadedToken !== token;
+}
+
 export function failStudentLoadMore(current: StudentSearchResult | null, token: string) {
   return current?.token === token ? { ...current, loadingMore: false, loadMoreFailed: true } : current;
 }
