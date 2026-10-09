@@ -2,20 +2,21 @@ import { useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import { CircleUserRound, House, SquarePlus, type LucideIcon } from 'lucide-react-native';
+import { CircleUserRound, Compass, House, SquarePlus, type LucideIcon } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
 // A destination is either a tab screen in src/app/(protected)/(tabs) or an action
-// that pushes a screen above the tabs. Add future tabs (Discover, Communities)
-// here together with their route file.
+// that pushes a screen above the tabs. Add future tabs (Communities) here together
+// with their route file.
 type Destination =
   | { kind: 'tab'; name: string; label: string; icon: LucideIcon }
   | { kind: 'action'; name: string; label: string; icon: LucideIcon; href: Href };
 
 const destinations: Destination[] = [
   { kind: 'tab', name: 'home', label: 'Home', icon: House },
+  { kind: 'tab', name: 'discover', label: 'Discover', icon: Compass },
   { kind: 'action', name: 'create', label: 'Create', icon: SquarePlus, href: '/create-post' },
   { kind: 'tab', name: 'account', label: 'Profile', icon: CircleUserRound },
 ];

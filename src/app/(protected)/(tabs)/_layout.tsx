@@ -10,6 +10,7 @@ export default function TabsLayout() {
     screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors[scheme].background } }}
   >
     <Tabs.Screen name="home" />
+    <Tabs.Screen name="discover" />
     <Tabs.Screen name="account" />
   </Tabs>;
 }
