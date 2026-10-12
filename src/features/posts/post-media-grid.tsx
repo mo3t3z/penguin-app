@@ -9,7 +9,7 @@ import type { FeedMedia } from './feed';
 import { orderReadyMedia } from './private-media';
 import { usePrivateMediaUrl } from './use-private-media-url';
 
-// Tile proportions from the Figma "Image grid" at 326px: one image is 326x206,
+// Tile proportions of the image grid at 326px: one image is 326x206,
 // two are 160x176 each, and three or four use 160x142 tiles (the third of three
 // spans the full width).
 const tileRatio = { single: 326 / 206, pair: 160 / 176, quad: 160 / 142, wide: 326 / 142 } as const;
@@ -46,7 +46,7 @@ function PrivatePostImage({ media, index, count, visible, style }: {
   };
   const label = `Image ${index + 1} of ${count} in this post`;
 
-  return <View className="overflow-hidden rounded-sm bg-muted" style={style}>
+  return <View className="overflow-hidden rounded-md bg-muted" style={style}>
     {url && !imageFailed ? <Image
       source={{ uri: url }}
       className="size-full"
@@ -64,7 +64,7 @@ function PrivatePostImage({ media, index, count, visible, style }: {
         <Icon as={ImageIcon} size={24} color="muted-foreground" />
         <Text variant="caption" numberOfLines={2} className="text-center text-muted-foreground">{error ?? 'Image unavailable'}</Text>
         <Button variant="ghost" size="sm" onPress={retry} accessibilityLabel={`Retry loading image ${index + 1}`}>
-          <Icon as={RefreshCw} size={16} color="primary" />
+          <Icon as={RefreshCw} size={16} color="primary-text" />
           <Text>Retry</Text>
         </Button>
       </View>}

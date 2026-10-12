@@ -45,6 +45,11 @@ export function studentSearchFilters(terms: readonly string[]): string[] {
   return requireTerms(terms).map((term) => `display_name.ilike.*${term}*,username.ilike.*${term}*`);
 }
 
+// The same shape for groups: every word must appear in the name or the description.
+export function groupSearchFilters(terms: readonly string[]): string[] {
+  return requireTerms(terms).map((term) => `name.ilike.*${term}*,description.ilike.*${term}*`);
+}
+
 // One ILIKE pattern per term for a single column; applied as separate filters, so
 // every word must appear in the post text.
 export function postSearchPatterns(terms: readonly string[]): string[] {

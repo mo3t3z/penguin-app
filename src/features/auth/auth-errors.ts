@@ -23,6 +23,7 @@ export function isEmailRateLimited(error: unknown): boolean {
 
 export function authErrorMessage(error: unknown): string {
   const code = field(error, 'code');
+  if (code === 'secure_pkce_unavailable') return 'This device can’t complete secure sign-in right now. Update Penguin and try again.';
   if (code === 'invalid_credentials') return 'The email or password is incorrect.';
   if (code === 'email_not_confirmed') return 'Confirm your email before signing in. Use “Resend verification” if you need a new link.';
   if (code === 'same_password') return 'Choose a password different from your current password.';

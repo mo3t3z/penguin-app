@@ -6,7 +6,7 @@ import { Icon } from './icon';
 
 type PasswordFieldProps = Omit<React.ComponentProps<typeof FormField>, 'secureTextEntry' | 'trailing'>;
 
-// Figma password input: hidden by default with an eye control to reveal it.
+// Password input: hidden by default with an eye control to reveal it.
 export function PasswordField(props: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   return <FormField

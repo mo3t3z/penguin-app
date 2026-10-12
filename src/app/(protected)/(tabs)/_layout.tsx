@@ -12,5 +12,6 @@ export default function TabsLayout() {
     <Tabs.Screen name="home" />
     <Tabs.Screen name="discover" />
     <Tabs.Screen name="account" />
+    <Tabs.Screen name="messages" />
   </Tabs>;
 }

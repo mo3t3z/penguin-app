@@ -30,7 +30,7 @@ function OpenOptionSheet<Value extends string>({ title, icon, options, selected,
   </SheetShell>;
 }
 
-// A short fixed list of choices in the Figma bottom sheet (for example study
+// A short fixed list of choices in the bottom sheet (for example study
 // level). Closing without confirming discards the temporary choice.
 export function OptionSheet<Value extends string>({ visible, ...content }: OptionSheetProps<Value>) {
   return visible ? <OpenOptionSheet {...content} /> : null;

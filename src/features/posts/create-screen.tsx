@@ -1,9 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BackHandler,
   Keyboard,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   View,
 } from 'react-native';
@@ -11,14 +10,17 @@ import { router, useFocusEffect } from 'expo-router';
 import * as Crypto from 'expo-crypto';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePlus } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { UserAvatar } from '@/components/social/user-avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Dialog } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import type { Profile } from '@/lib/database.types';
+import { usePenguinTheme } from '@/theme/provider';
+import { colors } from '@/theme/tokens';
+import { shadowStyle } from '@/theme/shadow';
 import { processPostImage } from './image-processing';
 import {
   authorizePostImageUpload,
@@ -45,11 +47,10 @@ import {
   selectedImageFromAsset,
   type SelectedPostImage,
 } from './selected-media';
-import { POST_TEXT_LIMIT, preparePostPublishAttempt, type PostPublishAttempt } from './validation';
+import { hasPostDraft, POST_TEXT_LIMIT, preparePostPublishAttempt, type PostPublishAttempt } from './validation';
 
-function initialsFor(name: string) {
-  return name.split(/\s+/).slice(0, 2).map(part => [...part][0]).join('').toUpperCase();
-}
+// The character counter stays out of the way until the limit is near.
+const COUNTER_FROM = 4500;
 
 function publishError(cause: unknown) {
   if (cause instanceof ImagePublishError) return cause.message;
@@ -89,7 +90,15 @@ function imagePickerError(cause: unknown) {
       : 'Penguin could not open that image. Try choosing it again.';
 }
 
+// Create is a full-height sheet above the tabs (see the `create-post` screen options
+// in src/app/(protected)/_layout.tsx): a raised surface from just under the status
+// bar, with a decorative handle. It cannot be dragged away, so a draft is never lost
+// to a swipe, and Cancel or the system Back asks before discarding one. One scroll
+// view holds the author, the text and the photos; the toolbar stays pinned above
+// the keyboard.
 export function CreatePostScreen({ profile }: { profile: Profile }) {
+  const insets = useSafeAreaInsets();
+  const { scheme } = usePenguinTheme();
   const [content, setContent] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,10 +117,31 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
   const valid = content.trim().length > 0 && length <= POST_TEXT_LIMIT;
   const name = profile.display_name?.trim() || 'Penguin student';
   const imageLimitReached = selectedImages.length >= MAX_POST_IMAGES;
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const draft = hasPostDraft(content, selectedImages.length);
+  const draftRef = useRef(draft);
+  useEffect(() => { draftRef.current = draft; }, [draft]);
+
+  const leave = useCallback(() => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/home');
+  }, []);
+  // Cancel and the system Back share one rule: nothing typed, leave at once;
+  // something typed or chosen, ask first.
+  const requestClose = useCallback(() => {
+    if (inFlight.current) return;
+    if (draftRef.current) { Keyboard.dismiss(); setConfirmDiscard(true); } else leave();
+  }, [leave]);
 
   useFocusEffect(useCallback(() => {
     mounted.current = true;
-    const listener = BackHandler.addEventListener('hardwareBackPress', () => inFlight.current);
+    const listener = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (inFlight.current) return true;
+      if (!draftRef.current) return false;
+      Keyboard.dismiss();
+      setConfirmDiscard(true);
+      return true;
+    });
     return () => { mounted.current = false; listener.remove(); };
   }, []));
 
@@ -241,86 +271,104 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
     setMediaError(null);
   }
 
-  return <SafeAreaView className="flex-1 bg-background">
-    <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View className="flex-row items-center justify-between border-b border-border px-3 py-2">
-        <Button variant="ghost" size="sm" disabled={busy} accessibilityLabel="Cancel creating post"
-          onPress={() => router.canGoBack() ? router.back() : router.replace('/home')}>
-          <Text>Cancel</Text>
-        </Button>
-        <Text variant="h4">Create Post</Text>
-        <Button size="sm" loading={busy} disabled={!valid || pickingImages}
-          accessibilityLabel={publishFailed ? 'Retry publishing post' : 'Publish post'}
-          onPress={() => void publish()}>
-          <Text>{busy ? 'Publishing…' : publishFailed ? 'Retry' : 'Publish'}</Text>
-        </Button>
-      </View>
+  return <View className="flex-1" style={{ backgroundColor: colors[scheme].overlay, paddingTop: insets.top + 8 }}>
+    {/* The one keyboard strategy for this screen, the same as in a conversation:
+        "padding" pads by exactly what the keyboard covers on both platforms. */}
+    <KeyboardAvoidingView className="flex-1" behavior="padding">
+      <View
+        className="w-full max-w-xl flex-1 self-center overflow-hidden rounded-t-lg bg-surface-raised"
+        style={shadowStyle('sheet', scheme)}
+        accessibilityViewIsModal
+      >
+        <View className="mt-2 h-1 w-10 self-center rounded-full bg-border" aria-hidden />
+        <View className="h-14 flex-row items-center justify-between px-2">
+          <View className="absolute inset-0 items-center justify-center" pointerEvents="none">
+            <Text className="text-body font-inter-semibold" role="heading">New post</Text>
+          </View>
+          <Button variant="ghost" size="sm" disabled={busy} accessibilityLabel="Cancel creating post"
+            onPress={requestClose}>
+            <Text>Cancel</Text>
+          </Button>
+          <Button size="sm" className="mr-1" loading={busy} disabled={!valid || pickingImages}
+            accessibilityLabel={publishFailed ? 'Retry publishing post' : 'Publish post'}
+            onPress={() => void publish()}>
+            <Text>{busy ? 'Posting…' : publishFailed ? 'Retry' : 'Post'}</Text>
+          </Button>
+        </View>
 
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
-        contentContainerClassName="grow p-5">
-        <View className="w-full max-w-lg flex-1 self-center gap-5">
+        <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
+          contentContainerClassName="grow gap-4 px-5 pb-5 pt-2">
           <View className="flex-row items-center gap-3">
-            <Avatar key={profile.avatar_url ?? 'initials'} alt={`${name}'s avatar`} size="lg">
-              {profile.avatar_url ? <AvatarImage source={{ uri: profile.avatar_url }} /> : null}
-              <AvatarFallback className="bg-secondary">
-                <Text className="font-inter-semibold text-accent-foreground">{initialsFor(name)}</Text>
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar name={name} uri={profile.avatar_url} size="md" />
             <View className="min-w-0 flex-1">
               <Text variant="large" numberOfLines={1}>{name}</Text>
               <Text variant="muted" numberOfLines={1}>@{profile.username ?? 'student'}</Text>
             </View>
           </View>
 
-          <Card className="flex-1 py-0">
-            <CardContent className="flex-1 gap-4 px-4 py-4">
-              <Input
-                variant="multiline"
-                className="min-h-64 flex-1 border-0 bg-transparent px-0 py-0"
-                value={content}
-                onChangeText={updateContent}
-                placeholder="What would you like to share with students?"
-                accessibilityLabel="Post content"
-                editable={!busy && !publishLocked}
-                autoFocus
-                scrollEnabled={false}
-              />
+          {/* The scroll view scrolls, not the field, so long text never fights it. */}
+          <Input
+            variant="multiline"
+            className="min-h-32 border-0 bg-transparent px-0"
+            value={content}
+            onChangeText={updateContent}
+            placeholder="What would you like to share with students?"
+            accessibilityLabel="Post content"
+            editable={!busy && !publishLocked}
+            autoFocus
+            scrollEnabled={false}
+          />
 
-              <SelectedImagePreview images={selectedImages} disabled={busy || publishLocked} onRemove={removeImage} />
+          <SelectedImagePreview images={selectedImages} disabled={busy || publishLocked} onRemove={removeImage} />
 
-              {processingMessage ? <Text variant="small" className="text-primary" accessibilityLiveRegion="polite">
-                {processingMessage}
-              </Text> : null}
+          {processingMessage ? <Text variant="small" className="text-muted-foreground" accessibilityLiveRegion="polite">
+            {processingMessage}
+          </Text> : null}
 
-              {publishStatus ? <Text variant="small" className="text-primary" accessibilityLiveRegion="polite">
-                {publishStatus}
-              </Text> : null}
+          {publishStatus ? <Text variant="small" className="text-muted-foreground" accessibilityLiveRegion="polite">
+            {publishStatus}
+          </Text> : null}
 
-              {publishFailed && publishLocked ? <Text variant="small" className="text-warning" accessibilityLiveRegion="polite">
-                Retry will recover the same post and continue its image uploads.
-              </Text> : null}
+          {publishFailed && publishLocked ? <Text variant="small" className="text-warning" accessibilityLiveRegion="polite">
+            Retry will recover the same post and continue its image uploads.
+          </Text> : null}
 
-              <View className="min-h-12 flex-row items-center justify-between gap-3 border-t border-border pt-3">
-                <View className="flex-row items-center gap-2">
-                  <Button variant="ghost" size="icon" loading={pickingImages} disabled={busy || publishLocked || imageLimitReached}
-                    accessibilityLabel={imageLimitReached ? 'Maximum of 4 images selected' : 'Add images from photo library'}
-                    onPress={() => void pickImages()}>
-                    <Icon as={ImagePlus} color="muted-foreground" />
-                  </Button>
-                  <Text variant="muted">{selectedImages.length}/{MAX_POST_IMAGES} images</Text>
-                </View>
-                <Text variant="small" className={length === POST_TEXT_LIMIT ? 'text-warning' : 'text-muted-foreground'}
-                  accessibilityLabel={`${length} of ${POST_TEXT_LIMIT} characters`}>
-                  {length.toLocaleString()}/{POST_TEXT_LIMIT.toLocaleString()}
-                </Text>
-              </View>
-            </CardContent>
-          </Card>
+          {error ? <Text variant="callout" className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
+          {mediaError ? <Text variant="callout" className="text-destructive" accessibilityLiveRegion="polite">{mediaError}</Text> : null}
+        </ScrollView>
 
-          {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
-          {mediaError ? <Text className="text-destructive" accessibilityLiveRegion="polite">{mediaError}</Text> : null}
+        <View
+          className="min-h-16 flex-row items-center justify-between gap-3 border-t border-divider pl-2 pr-5"
+          style={{ paddingBottom: insets.bottom }}
+        >
+          <View className="flex-row items-center gap-1">
+            <Button variant="ghost" loading={pickingImages} disabled={busy || publishLocked || imageLimitReached}
+              accessibilityLabel={imageLimitReached ? 'Maximum of 4 images selected' : 'Add images from photo library'}
+              onPress={() => void pickImages()}>
+              {pickingImages ? null : <Icon as={ImagePlus} size={24} color="primary-text" />}
+              <Text>Add photos</Text>
+            </Button>
+            <Text variant="muted" accessibilityLabel={`${selectedImages.length} of ${MAX_POST_IMAGES} images`}>
+              {selectedImages.length}/{MAX_POST_IMAGES}
+            </Text>
+          </View>
+          {length >= COUNTER_FROM ? <Text variant="small" className={length === POST_TEXT_LIMIT ? 'text-warning' : 'text-muted-foreground'}
+            accessibilityLabel={`${length} of ${POST_TEXT_LIMIT} characters`}
+            accessibilityLiveRegion="polite">
+            {length.toLocaleString()}/{POST_TEXT_LIMIT.toLocaleString()}
+          </Text> : null}
         </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
-  </SafeAreaView>;
+    <Dialog
+      visible={confirmDiscard}
+      title="Discard this post?"
+      description="What you wrote and the photos you chose will be lost."
+      onClose={() => setConfirmDiscard(false)}
+      actions={<>
+        <Button variant="outline" size="sm" onPress={() => setConfirmDiscard(false)}><Text>Keep editing</Text></Button>
+        <Button variant="destructive" size="sm" onPress={() => { setConfirmDiscard(false); leave(); }}><Text>Discard</Text></Button>
+      </>}
+    />
+  </View>;
 }

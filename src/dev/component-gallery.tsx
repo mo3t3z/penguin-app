@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowUpRight, Bell, Building2, GraduationCap, Mail, Moon, Sun, Monitor, Users } from 'lucide-react-native';
+import { ArrowLeft, ArrowUpRight, Bell, Building2, CircleCheck, GraduationCap, LogOut, Mail, Moon, Sun, Monitor, Users, WifiOff } from 'lucide-react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,11 @@ import { ProfileAbout } from '@/features/profile/profile-about';
 import { ProfileHeader } from '@/features/profile/profile-header';
 import type { PublicProfile } from '@/features/profile/service';
 import type { FeedPost } from '@/features/posts/feed';
+import { Chip } from '@/components/ui/chip';
+import { Dialog } from '@/components/ui/dialog';
+import { Menu } from '@/components/ui/menu';
+import { Toast } from '@/components/ui/toast';
+import { TypingIndicator } from '@/features/chat/typing-indicator';
 import { usePenguinTheme } from '@/theme/provider';
 import { colors, avatarSizes } from '@/theme/tokens';
 
@@ -49,9 +54,11 @@ const previewStudies = {
 };
 const previewTabs = [{ key: 'posts', label: 'Posts' }, { key: 'about', label: 'About' }] as const;
 
+const ignore = () => {};
+
 function Section({ number, title, children }: React.PropsWithChildren<{ number: string; title: string }>) {
   return <View className="gap-5">
-    <View className="flex-row items-center gap-3"><Text variant="caption" className="text-primary">{number}</Text><Text variant="h3">{title}</Text></View>
+    <View className="flex-row items-center gap-3"><Text variant="caption" className="text-primary-text">{number}</Text><Text variant="h3">{title}</Text></View>
     {children}
   </View>;
 }
@@ -65,6 +72,8 @@ export default function ComponentGallery() {
   const [option, setOption] = useState(0);
   const [profileTab, setProfileTab] = useState<'posts' | 'about'>('posts');
   const [secret, setSecret] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const palette = colors[scheme];
   return <SafeAreaView className="flex-1 bg-background">
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -77,9 +86,9 @@ export default function ComponentGallery() {
             <IconButton icon={Bell} accessibilityLabel="Icon button preview" onPress={() => setPresses(value => value + 1)} />
           </View>
           <View className="gap-4">
-            <View className="self-start"><Badge variant="campus"><Text>SPRINT 0 · UI FOUNDATION</Text></Badge></View>
+            <View className="self-start"><Badge variant="campus"><Text>Warm Minimal Social</Text></Badge></View>
             <Text variant="h1">Made for{'\n'}what’s next.</Text>
-            <Text variant="lead">Snow, ink and teal. A quieter canvas for bright minds and shared momentum.</Text>
+            <Text variant="lead">Warm paper, ink and one ember. Less chrome, more people.</Text>
           </View>
           <View className="gap-3">
             <Text variant="small">Appearance</Text>
@@ -96,8 +105,8 @@ export default function ComponentGallery() {
           <Separator />
           <Section number="01" title="The palette">
             <View className="flex-row flex-wrap gap-3">
-              {(['foreground', 'background', 'primary', 'accent', 'muted'] as const).map(token => <View key={token} className="gap-2" style={{ width: 100 }}>
-                <View className="h-20 rounded-lg border border-border" style={{ backgroundColor: palette[token] }} />
+              {(Object.keys(palette) as (keyof typeof palette)[]).map(token => <View key={token} className="gap-2" style={{ width: 100 }}>
+                <View className="h-14 rounded-md border border-border" style={{ backgroundColor: palette[token] }} />
                 <Text variant="caption">{token}</Text><Text variant="caption" className="text-muted-foreground">{palette[token]}</Text>
               </View>)}
             </View>
@@ -105,11 +114,14 @@ export default function ComponentGallery() {
           <Section number="02" title="Words with room">
             <Text variant="h1">Big ideas.</Text><Text variant="h2">Small beginnings.</Text>
             <Text variant="h3">Space to belong.</Text><Text variant="lead">A little curiosity goes a long way.</Text>
-            <Text>Body · 15/22. Clear, comfortable reading for everyday conversations.</Text>
-            <Text className="text-metadata">Post text · 14/20. What students share.</Text>
-            <Text variant="small">Label · 13/18 semibold. Field labels.</Text>
-            <Text variant="muted">Secondary · 13/18. Supporting context.</Text><Text variant="caption">Caption · 12/16. The small details.</Text>
-            <Text className="text-micro text-muted-foreground">Metadata · 11/14. Times and tab labels.</Text>
+            <Text variant="h4">Headline · 17/24. Section headers.</Text>
+            <Text>Body · 16/24. Posts and messages.</Text>
+            <Text className="text-body-ar" style={{ writingDirection: 'rtl', textAlign: 'right' }}>نص عربي · 17/28. منشورات ورسائل.</Text>
+            <Text variant="callout">Callout · 15/22. Snippets and previews.</Text>
+            <Text variant="large">Label · 15/20 semibold. Names and buttons.</Text>
+            <Text variant="small">Footnote · 13/18 semibold. Field labels.</Text>
+            <Text variant="muted">Footnote · 13/18. Meta lines.</Text><Text variant="caption">Caption · 12/16. Times and receipts.</Text>
+            <Text className="text-micro text-muted-foreground">Micro · 11/14. Navigation labels only.</Text>
           </Section>
           <Section number="03" title="Every action, considered">
             <View className="flex-row flex-wrap gap-3">
@@ -152,7 +164,7 @@ export default function ComponentGallery() {
                 <Avatar size={size} alt={`${size} avatar preview`}><AvatarFallback><Text variant={size === 'xs' ? 'caption' : 'small'}>PN</Text></AvatarFallback></Avatar>
                 <Text variant="caption">{avatarSizes[size]}</Text>
               </View>)}
-              <Avatar alt="Local image preview" size="xl"><AvatarImage source={require('../../assets/icon.png')} /><AvatarFallback><Text>PN</Text></AvatarFallback></Avatar>
+              <Avatar alt="Local image preview" size="xl"><AvatarImage source={require('../../assets/penguin-icon-small.png')} /><AvatarFallback><Text>PN</Text></AvatarFallback></Avatar>
             </View>
             <View className="flex-row flex-wrap gap-2">{(['secondary','campus','subject','success','warning','destructive','outline'] as const).map(variant => <Badge key={variant} variant={variant}><Text>{variant === 'secondary' ? 'Neutral' : variant}</Text></Badge>)}</View>
             <Separator />
@@ -179,7 +191,28 @@ export default function ComponentGallery() {
             <StatePanel icon={Users} title="The campus is quiet" description="Empty and error states share this layout."
               actionLabel="Primary action" onAction={() => setPresses(value => value + 1)} />
           </Section>
-          <Separator /><Text variant="caption" className="text-muted-foreground">PENGUIN · DEVELOPMENT GALLERY · FOUNDATION BEFORE FEATURES</Text>
+          <Section number="08" title="Choices and floating layers">
+            <View className="flex-row flex-wrap gap-2">
+              {['Posts', 'Students', 'Photos'].map((label, index) => <Chip key={label} label={label} selected={option === index} onPress={() => setOption(index)} />)}
+            </View>
+            <Toast icon={Bell} message="Your draft is still here." onDismiss={ignore} />
+            <Toast icon={CircleCheck} tone="success" message="Post published." actionLabel="View" onAction={ignore} onDismiss={ignore} />
+            <Toast icon={WifiOff} tone="error" message="Check your connection, then try again." onDismiss={ignore} />
+            <View className="flex-row flex-wrap gap-3">
+              <Button variant="outline" onPress={() => setDialogOpen(true)}><Text>Open dialog</Text></Button>
+              <Button variant="outline" onPress={() => setMenuOpen(true)}><Text>Open menu</Text></Button>
+            </View>
+            <Dialog visible={dialogOpen} title="Discard this post?" description="Your writing and photos will be removed."
+              onClose={() => setDialogOpen(false)}
+              actions={<>
+                <Button variant="ghost" onPress={() => setDialogOpen(false)}><Text>Keep editing</Text></Button>
+                <Button variant="destructive" onPress={() => setDialogOpen(false)}><Text>Discard</Text></Button>
+              </>} />
+            <Menu visible={menuOpen} top={120} onClose={() => setMenuOpen(false)}
+              items={[{ key: 'log-out', label: 'Log out', icon: LogOut, destructive: true, onPress: () => setMenuOpen(false) }]} />
+            <TypingIndicator name="Sarra Ben Ali" firstName="Sarra" avatarUrl={null} />
+          </Section>
+          <Separator /><Text variant="caption" className="text-muted-foreground">Penguin · Development gallery</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

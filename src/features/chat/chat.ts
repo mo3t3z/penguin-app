@@ -57,6 +57,36 @@ export function conversationPreview(conversation: ConversationSummary, userId: s
   return conversation.last_message_sender_id === userId ? `You: ${text}` : text;
 }
 
+// --- Unread ------------------------------------------------------------------------
+
+// The student's own read cursor per conversation: the time, null when they have
+// never opened it. A conversation with no entry was not checked and is never
+// reported as unread.
+export type ReadCursors = Readonly<Record<string, string | null>>;
+
+// Unread means the last message came from the other side after the student last
+// opened the conversation. It is a yes or no: the app does not know how many.
+export function isConversationUnread(
+  conversation: Pick<ConversationSummary, 'last_message_at' | 'last_message_sender_id'>,
+  userId: string,
+  lastReadAt: string | null | undefined,
+) {
+  if (lastReadAt === undefined) return false;
+  if (!conversation.last_message_at || conversation.last_message_sender_id === userId) return false;
+  if (lastReadAt === null) return true;
+  const sent = Date.parse(conversation.last_message_at);
+  const read = Date.parse(lastReadAt);
+  return Number.isFinite(sent) && Number.isFinite(read) && sent > read;
+}
+
+export function readCursorsFor(
+  conversationIds: readonly string[],
+  rows: readonly { conversation_id: string; last_read_at: string }[],
+): ReadCursors {
+  const found = new Map(rows.map((row) => [row.conversation_id, row.last_read_at]));
+  return Object.fromEntries(conversationIds.map((id) => [id, found.get(id) ?? null]));
+}
+
 // --- Pagination ---------------------------------------------------------------------
 
 export type ChatCursor = { createdAt: string; id: string };
@@ -177,6 +207,41 @@ export function startsNewDay(items: readonly Pick<ChatMessage, 'created_at'>[], 
   return !older || messageDayKey(older.created_at) !== messageDayKey(items[index].created_at);
 }
 
+// Consecutive messages from one sender, on the same day and at most this far
+// apart, are shown as one group.
+export const MESSAGE_GROUP_WINDOW_MS = 5 * 60_000;
+
+function sameGroup(left: Pick<ChatMessage, 'sender_id' | 'created_at'>, right: Pick<ChatMessage, 'sender_id' | 'created_at'>) {
+  if (left.sender_id !== right.sender_id) return false;
+  if (messageDayKey(left.created_at) !== messageDayKey(right.created_at)) return false;
+  const gap = Math.abs(Date.parse(left.created_at) - Date.parse(right.created_at));
+  return Number.isFinite(gap) && gap <= MESSAGE_GROUP_WINDOW_MS;
+}
+
+// Where a message sits in its group in a newest-first list: `start` is the first
+// (oldest, top) message of the group and `end` the last (newest, bottom) one. A
+// message on its own is both.
+export type MessageGroupPosition = { start: boolean; end: boolean };
+export function messageGroupPosition(
+  items: readonly Pick<ChatMessage, 'sender_id' | 'created_at'>[],
+  index: number,
+): MessageGroupPosition {
+  const older = items[index + 1];
+  const newer = items[index - 1];
+  return {
+    start: !older || !sameGroup(items[index], older),
+    end: !newer || !sameGroup(items[index], newer),
+  };
+}
+
+// True when the first letter of the text belongs to a right-to-left script
+// (Arabic, Hebrew and their neighbours), so the bubble can align it to the right.
+// Digits, punctuation and emoji before it are skipped.
+export function isRightToLeft(text: string) {
+  const strong = /[\p{L}]/u.exec(text);
+  return Boolean(strong) && /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFC]/.test((strong as RegExpExecArray)[0]);
+}
+
 export function messageDayLabel(iso: string, now = new Date(), locale = 'en-US') {
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return '';
@@ -216,6 +281,15 @@ export const chatErrorMessages: Record<ChatErrorKind, string> = {
   invalid: `Messages need 1–${MESSAGE_TEXT_LIMIT.toLocaleString('en-US')} characters.`,
   forbidden: 'This conversation isn’t available.',
   network: 'Penguin couldn’t send that. Check your connection and try again.',
+};
+
+// Why a conversation could not be opened from a profile or the New message screen.
+export const conversationOpenErrors: Record<ChatErrorKind, string> = {
+  unavailable: 'You can’t message this student right now.',
+  'rate-limited': 'You’ve started a lot of conversations today. Try again tomorrow.',
+  invalid: 'You can’t message this student right now.',
+  forbidden: 'You can’t message this student right now.',
+  network: 'Penguin couldn’t open that conversation. Check your connection and try again.',
 };
 
 // What the composer area shows.

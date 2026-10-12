@@ -28,12 +28,12 @@ export function UsernameField({ value, onChange, disabled, currentUsername }: { 
     unavailable: 'That username is taken. Try another.', invalid: 'Use 3–30 lowercase letters, numbers or underscores. Start with a letter or number.',
     error: 'We couldn’t check right now. Check your connection and retry.',
   };
-  return <View className="gap-[7px]">
+  return <View className="gap-1.5">
     <FormField label="Username" required leadingIcon={AtSign} value={value} onChangeText={next => { setResult(null); onChange(next.toLowerCase()); }}
       autoCapitalize="none" autoCorrect={false} autoComplete="off" maxLength={30} editable={!disabled}
       hint="3–30 letters, numbers or underscores. No spaces." error={status === 'invalid' || status === 'unavailable' ? messages[status] : undefined} />
     {status === 'invalid' || status === 'unavailable' ? null
-      : <Text variant="caption" accessibilityLiveRegion="polite" className={status === 'available' ? 'text-primary' : 'text-muted-foreground'}>{messages[status]}</Text>}
+      : <Text variant="caption" accessibilityLiveRegion="polite" className={status === 'available' ? 'text-success' : 'text-muted-foreground'}>{messages[status]}</Text>}
     {status === 'error' ? <Button variant="ghost" disabled={disabled} onPress={() => { setResult(null); setAttempt(value => value + 1); }}><Text>Retry username check</Text></Button> : null}
   </View>;
 }

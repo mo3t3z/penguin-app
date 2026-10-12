@@ -74,6 +74,47 @@ export type Message = {
 export type MessageSendResult = Message & { idempotent_replay: boolean };
 export type ConversationRead = { conversation_id: string; user_id: string; last_read_at: string };
 export type UserBlock = { blocker_id: string; blocked_id: string; created_at: string };
+export type GroupRole = 'owner' | 'admin' | 'member';
+export type GroupStatus = 'active' | 'archived';
+// creator_id, client_request_id and member_count exist in the table but are not
+// readable by the app: SQL column grants leave them out. A viewer's member count
+// comes from get_group_viewer_summaries.
+export type Group = {
+  id: string;
+  name: string;
+  description: string | null;
+  visibility: 'public';
+  status: GroupStatus;
+  created_at: string;
+  updated_at: string;
+};
+export type GroupMember = { group_id: string; user_id: string; role: GroupRole; joined_at: string };
+export type GroupCreateResult = Pick<Group, 'id' | 'name' | 'description' | 'status' | 'created_at'> & { idempotent_replay: boolean };
+export type GroupJoinResult = GroupMember & { already_member: boolean };
+// Per group: the actual number of members, how many of them are unavailable to this
+// viewer (a number only, nothing about who), and the viewer's own role.
+// my_role and role report an admin as 'member', for app code that predates roles;
+// my_group_role and group_role (present since the roles migration) hold the full role.
+export type GroupViewerSummary = {
+  group_id: string; member_count: number; unavailable_member_count: number; my_role: GroupRole | null;
+  my_group_role?: GroupRole | null;
+};
+export type GroupMemberListing = Pick<GroupMember, 'user_id' | 'role' | 'joined_at'>
+  & Pick<Profile, 'username' | 'display_name' | 'avatar_url'> & { group_role?: GroupRole };
+// A banned student, as staff may see them. Never who placed the ban.
+export type GroupBanListing = Pick<Profile, 'username' | 'display_name' | 'avatar_url'> & {
+  banned_id: string; banned_at: string; can_unban: boolean;
+};
+export type GroupAdminEventAction =
+  | 'member_promoted' | 'admin_demoted' | 'member_removed' | 'member_banned'
+  | 'member_unbanned' | 'ownership_transferred' | 'details_updated';
+// One administrative action. Names only: no account identifier is returned.
+export type GroupAdminEventListing = {
+  id: string; action: GroupAdminEventAction; created_at: string;
+  actor_username: string | null; actor_display_name: string | null; actor_missing: boolean;
+  target_username: string | null; target_display_name: string | null; target_missing: boolean;
+  detail: string | null;
+};
 
 export type Database = {
   public: {
@@ -147,6 +188,21 @@ export type Database = {
           { foreignKeyName: 'user_blocks_blocked_id_fkey'; columns: ['blocked_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
         ];
       };
+      groups: {
+        Row: Group;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      group_members: {
+        Row: GroupMember;
+        Insert: never;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'group_members_group_id_fkey'; columns: ['group_id']; isOneToOne: false; referencedRelation: 'groups'; referencedColumns: ['id'] },
+          { foreignKeyName: 'group_members_user_id_fkey'; columns: ['user_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ];
+      };
       profiles: {
         Row: Profile;
         Insert: Pick<Profile, 'id'> & Partial<Omit<Profile, 'id'>>;
@@ -198,6 +254,36 @@ export type Database = {
       block_user: { Args: { p_blocked_id: string }; Returns: undefined };
       unblock_user: { Args: { p_blocked_id: string }; Returns: undefined };
       mark_conversation_read: { Args: { p_conversation_id: string }; Returns: undefined };
+      get_read_receipt: { Args: { p_conversation_id: string }; Returns: string | null };
+      create_group_idempotent: {
+        Args: { p_request_id: string; p_name: string; p_description: string | null };
+        Returns: GroupCreateResult[];
+      };
+      join_group: { Args: { p_group_id: string }; Returns: GroupJoinResult[] };
+      leave_group: { Args: { p_group_id: string }; Returns: boolean };
+      get_group_viewer_summaries: { Args: { p_group_ids: string[] }; Returns: GroupViewerSummary[] };
+      list_group_members: {
+        Args: { p_group_id: string; p_after_joined_at?: string | null; p_after_user_id?: string | null; p_limit?: number };
+        Returns: GroupMemberListing[];
+      };
+      promote_group_member: { Args: { p_group_id: string; p_member_id: string }; Returns: GroupRole };
+      demote_group_admin: { Args: { p_group_id: string; p_member_id: string }; Returns: GroupRole };
+      transfer_group_ownership: { Args: { p_group_id: string; p_new_owner_id: string }; Returns: boolean };
+      remove_group_member: { Args: { p_group_id: string; p_member_id: string }; Returns: boolean };
+      ban_group_member: { Args: { p_group_id: string; p_member_id: string }; Returns: boolean };
+      unban_group_member: { Args: { p_group_id: string; p_banned_id: string }; Returns: boolean };
+      update_group_details: {
+        Args: { p_group_id: string; p_name: string; p_description: string | null };
+        Returns: Pick<Group, 'id' | 'name' | 'description' | 'updated_at'>[];
+      };
+      list_group_bans: {
+        Args: { p_group_id: string; p_before_banned_at?: string | null; p_before_banned_id?: string | null; p_limit?: number };
+        Returns: GroupBanListing[];
+      };
+      list_group_admin_events: {
+        Args: { p_group_id: string; p_before_created_at?: string | null; p_before_id?: string | null; p_limit?: number };
+        Returns: GroupAdminEventListing[];
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

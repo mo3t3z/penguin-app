@@ -9,11 +9,11 @@ import type { ProfileStudyDetails } from './profile-header';
 import type { PublicProfile } from './service';
 import { studyLevels } from './study-levels';
 
-// Figma "Academic details": institution, field and study level rows, then the
+// Academic details: institution, field and study level rows, then the
 // month the student joined.
 export function ProfileAbout({ profile, studies }: { profile: PublicProfile; studies: ProfileStudyDetails }) {
   const joined = joinedLabel(profile.created_at);
-  return <View className="gap-4 px-1 pt-1">
+  return <View className="gap-4 px-5 pt-4">
     {studies.loading ? <View className="gap-4" accessibilityLabel="Loading study details" accessibilityState={{ busy: true }}>
       <Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" />
     </View> : studies.failed ? <View className="items-start gap-1">

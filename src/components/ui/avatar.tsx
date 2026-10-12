@@ -10,7 +10,7 @@ function Avatar({
 }: React.ComponentProps<typeof AvatarPrimitive.Root> & { size?: keyof typeof avatarSizes }) {
   return (
     <AvatarPrimitive.Root
-      className={cn('relative flex size-8 shrink-0 overflow-hidden rounded-full', className)}
+      className={cn('relative flex shrink-0 overflow-hidden rounded-full', className)}
       style={[{ width: avatarSizes[size], height: avatarSizes[size] }, style]}
       {...props}
     />

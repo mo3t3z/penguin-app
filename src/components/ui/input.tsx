@@ -1,78 +1,72 @@
 import { cn } from '@/lib/utils';
-import { Platform, TextInput, View } from 'react-native';
+import { Platform, Pressable, TextInput, View } from 'react-native';
 import { useState, type ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react-native';
+import { Search, X, type LucideIcon } from 'lucide-react-native';
 import { colors } from '@/theme/tokens';
 import { usePenguinTheme } from '@/theme/provider';
 import { Icon } from './icon';
 
 export type InputProps = React.ComponentProps<typeof TextInput> & {
   variant?: 'default' | 'search' | 'multiline'; invalid?: boolean;
-  // Figma "Text input" and "Search field" place a 20px icon before the text and an
-  // optional control (for example show/hide password) after it.
+  // A 20px icon before the text and an optional control (for example show/hide
+  // password) after it. `search` adds its own magnifier and clear button.
   leadingIcon?: LucideIcon; trailing?: ReactNode;
+  // `className` styles the outlined control; this one styles the text inside it.
+  inputClassName?: string;
 };
-function Input({ className, variant = 'default', invalid, leadingIcon, trailing, onFocus, onBlur, ...props }: InputProps) {
+
+// TextField: 48px high (multi-line grows), 14px corners, card fill, 1.5px `input`
+// outline, 2px `focus` border when focused and 2px `destructive` when invalid.
+function Input({ className, inputClassName, variant = 'default', invalid, leadingIcon, trailing, onFocus, onBlur, ...props }: InputProps) {
   const [focused, setFocused] = useState(false);
   const { scheme } = usePenguinTheme();
+  const search = variant === 'search';
   const multiline = variant === 'multiline' || props.multiline;
   const disabled = props.editable === false;
-  const shared: React.ComponentProps<typeof TextInput> = {
-    placeholderTextColor: colors[scheme]['muted-foreground'],
-    selectionColor: colors[scheme].primary,
-    returnKeyType: variant === 'search' ? 'search' : undefined,
-    ...props,
-    'aria-disabled': disabled || props['aria-disabled'],
-    accessibilityState: { ...props.accessibilityState, disabled: disabled || props.accessibilityState?.disabled },
-    multiline,
-    textAlignVertical: multiline ? 'top' : 'center',
-    onFocus: event => { setFocused(true); onFocus?.(event); },
-    onBlur: event => { setFocused(false); onBlur?.(event); },
-  };
-  if (leadingIcon || trailing) {
-    // The border and fill move to a wrapper so the icons sit inside the control.
-    return <View className={cn(
-      'border-input bg-card min-h-[52px] w-full flex-row items-center gap-[10px] rounded-md border px-[14px]',
-      focused && 'border-2 border-primary px-[13px]',
-      invalid && 'border-destructive',
-      disabled && 'bg-muted',
-      className
-    )}>
-      {leadingIcon ? <Icon as={leadingIcon} color="muted-foreground" /> : null}
-      <TextInput
-        {...shared}
-        aria-invalid={invalid}
-        className={cn('text-foreground min-w-0 flex-1 py-3 text-body font-sans', Platform.select({ web: 'outline-none' }))}
-      />
-      {trailing}
-    </View>;
-  }
-  return (
+  const leading = leadingIcon ?? (search ? Search : undefined);
+  const clear = search && props.value && props.onChangeText ? props.onChangeText : null;
+  return <View className={cn(
+    'border-input bg-card min-h-12 w-full flex-row items-center gap-2.5 rounded-md border-1.5 px-3.5',
+    variant === 'multiline' && 'min-h-28',
+    multiline && 'items-start',
+    focused && 'border-2 border-focus',
+    invalid && 'border-2 border-destructive',
+    disabled && 'bg-muted',
+    className
+  )}>
+    {leading ? <Icon as={leading} color="muted-foreground" /> : null}
     <TextInput
-      {...shared}
+      placeholderTextColor={colors[scheme]['muted-foreground']}
+      selectionColor={colors[scheme].primary}
+      returnKeyType={search ? 'search' : undefined}
+      autoCapitalize={search ? 'none' : undefined}
+      autoCorrect={search ? false : undefined}
+      {...props}
+      aria-disabled={disabled || props['aria-disabled']}
       aria-invalid={invalid}
+      accessibilityState={{ ...props.accessibilityState, disabled: disabled || props.accessibilityState?.disabled }}
+      multiline={multiline}
+      textAlignVertical={multiline ? 'top' : 'center'}
+      onFocus={event => { setFocused(true); onFocus?.(event); }}
+      onBlur={event => { setFocused(false); onBlur?.(event); }}
       className={cn(
-        'border-input bg-card text-foreground min-h-[52px] w-full min-w-0 rounded-md border px-[14px] py-3 text-body font-sans',
-        multiline && 'min-h-28',
-        focused && 'border-2 border-primary px-[13px] py-[11px]',
-        invalid && 'border-destructive',
-        disabled &&
-        cn(
-          'bg-muted',
-          Platform.select({ web: 'disabled:pointer-events-none disabled:cursor-not-allowed' })
-        ),
-        Platform.select({
-          web: cn(
-            'placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground outline-none',
-            'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
-            'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive'
-          ),
-          native: '',
-        }),
-        className
+        'text-foreground min-w-0 flex-1 py-3 text-body font-sans',
+        multiline && 'self-stretch',
+        Platform.select({ web: 'outline-none placeholder:text-muted-foreground' }),
+        inputClassName
       )}
     />
-  );
+    {clear ? <Pressable
+      className="-mr-2.5 size-10 items-center justify-center rounded-full active:bg-muted"
+      role="button"
+      hitSlop={4}
+      accessibilityLabel="Clear search"
+      onPress={() => clear('')}
+    >
+      <Icon as={X} color="muted-foreground" />
+    </Pressable> : null}
+    {trailing}
+  </View>;
 }
 
 export { Input };

@@ -11,7 +11,7 @@ export function goBackOr(fallback: Href) {
   else router.replace(fallback);
 }
 
-// Shared layout for signed-out screens: Figma top navigation with a back button,
+// Shared layout for signed-out screens: the header with a back button,
 // then a scrolling column with the 20px page inset.
 export function AuthFrame({ navTitle, onBack, children }: PropsWithChildren<{ navTitle?: string; onBack?: () => void }>) {
   return <SafeAreaView className="flex-1 bg-background">

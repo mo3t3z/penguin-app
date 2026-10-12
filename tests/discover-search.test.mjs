@@ -24,6 +24,7 @@ import {
   studentDetail,
   studentSearchStatus,
 } from '../src/features/discover/student-search.ts';
+import { POSTS_SEARCH_DELAY_MS, postsSearchKey } from '../src/features/discover/discover-results.ts';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const student = (username, overrides = {}) => ({
@@ -174,9 +175,14 @@ test('search text and results are never logged', () => {
 test('Discover is a tab between Home and Create and keeps the other destinations', () => {
   const bar = read('../src/components/navigation/tab-bar.tsx');
   const names = [...bar.matchAll(/\{ kind: '(?:tab|action)', name: '([a-z]+)'/g)].map((match) => match[1]);
-  assert.deepEqual(names, ['home', 'discover', 'create', 'account']);
+  assert.deepEqual(names, ['home', 'discover', 'create', 'messages', 'account']);
+  // Create is the middle of five. Groups is not a tab screen since Sprint 7A: it opens
+  // from Discover as screens above the tabs (see tests/groups.test.mjs).
+  assert.equal(names.indexOf('create'), (names.length - 1) / 2);
   const layout = read('../src/app/(protected)/(tabs)/_layout.tsx');
   assert.match(layout, /<Tabs\.Screen name="home" \/>\s*<Tabs\.Screen name="discover" \/>\s*<Tabs\.Screen name="account" \/>/);
+  assert.doesNotMatch(layout, /name="groups"/);
+  assert.match(layout, /<Tabs\.Screen name="messages" \/>/);
 });
 
 test('the Discover route is keyed by account and opens profiles like Home does', () => {
@@ -188,6 +194,45 @@ test('the Discover route is keyed by account and opens profiles like Home does',
   assert.match(screen, /router\.push\(\{ pathname: '\/students\/\[id\]', params: \{ id: studentId \} \}\)/);
   assert.match(screen, /maxLength=\{SEARCH_MAX_LENGTH\}/);
   assert.doesNotMatch(screen, /useFocusEffect|Communities|Institutions/);
-  const scopes = read('../src/features/discover/discover-scopes.ts');
-  assert.deepEqual([...scopes.matchAll(/\{ key: '([a-z]+)', label: '([A-Za-z]+)' \}/g)].map((match) => match[2]), ['Students', 'Posts']);
+});
+
+// --- Two-stage search: what is requested, and when --------------------------------
+
+test('nothing is requested below two characters', () => {
+  assert.equal(searchKey('m'), '');
+  assert.equal(searchKey(' . '), '');
+  // An empty key is not searchable, so no students request starts...
+  assert.equal(shouldStartStudentSearch(false, true, null, 'u:0:'), false);
+  assert.equal(studentSearchStatus(false, 'u:0:', null), 'idle');
+  // ...and no posts request either.
+  assert.equal(postsSearchKey(searchKey('m'), '', ''), '');
+});
+
+test('a settled search asks for students once', () => {
+  assert.equal(shouldStartStudentSearch(true, true, null, 'u:0:maya'), true);
+  // Answered already: re-rendering, or coming back from See all, asks for nothing.
+  assert.equal(shouldStartStudentSearch(true, true, 'u:0:maya', 'u:0:maya'), false);
+  // Typing restarts the 350 ms wait instead of sending a request per keystroke.
+  const hook = read('../src/features/discover/use-student-search.ts');
+  assert.match(hook, /const delay = immediate\.current \? 0 : SEARCH_DEBOUNCE_MS;/);
+  assert.match(hook, /clearTimeout\(timer\);\s*controller\.abort\(\);/);
+});
+
+test('posts are not requested before the search has been stable for 800 ms', () => {
+  assert.equal(POSTS_SEARCH_DELAY_MS, 800);
+  assert.ok(POSTS_SEARCH_DELAY_MS > SEARCH_DEBOUNCE_MS);
+  assert.equal(postsSearchKey('maya', '', ''), '');
+  assert.equal(postsSearchKey('maya', 'may', ''), '');
+  assert.equal(postsSearchKey('maya', 'maya', ''), 'maya');
+  const screen = read('../src/features/discover/discover-screen.tsx');
+  // No post list is mounted, so no posts request exists, until that key is reached.
+  assert.match(screen, /: postsKey \? <FeedList\s+key=\{postsKey\}\s+search=\{postsKey\}/);
+  assert.match(screen, /const submit = \(\) => \{ Keyboard\.dismiss\(\); setSubmittedKey\(key\); \};/);
+});
+
+test('a response for an earlier search is never shown', () => {
+  const earlier = completedStudentSearch('u:0:may', { items: [student('maya')], nextCursor: null });
+  assert.equal(studentSearchStatus(true, 'u:0:maya', earlier), 'loading');
+  assert.equal(appendStudentPage(earlier, 'u:0:maya', { items: [student('leo')], nextCursor: null }), earlier);
+  assert.equal(failStudentLoadMore(earlier, 'u:0:maya'), earlier);
 });

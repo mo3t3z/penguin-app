@@ -3,9 +3,9 @@ import type { LucideIcon } from 'lucide-react-native';
 import { cn } from '@/lib/utils';
 import { Icon } from './icon';
 
-// Figma symbol tile: a 92px rounded square with a 40px teal icon.
+// The one decorative icon of an empty, idle or failed state: 32px in a 72px circle.
 export function IconTile({ icon, tone = 'muted' }: { icon: LucideIcon; tone?: 'muted' | 'accent' }) {
-  return <View className={cn('size-[92px] items-center justify-center rounded-xl', tone === 'accent' ? 'bg-accent' : 'bg-muted')}>
-    <Icon as={icon} size={40} color="primary" />
+  return <View className={cn('size-18 items-center justify-center rounded-full', tone === 'accent' ? 'bg-accent' : 'bg-muted')}>
+    <Icon as={icon} size={32} color={tone === 'accent' ? 'accent-foreground' : 'foreground'} />
   </View>;
 }

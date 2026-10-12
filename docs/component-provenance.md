@@ -11,3 +11,6 @@ Penguin changes: local import aliases; semantic themes; typography scale; mobile
 FormField is a Penguin composition of Input and Text. Icon is a small convention wrapper around Lucide. The theme provider and development gallery are application-specific.
 
 To add more primitives, consult https://reactnativereusables.com/docs and use the NativeWind registry. Inspect the source and dependencies before importing; do not overwrite Penguin variants without review.
+
+Chip, Dialog, Menu, Toast and IconButton are Penguin primitives written for the design system (2026-10-10); they have no upstream source. Reusables' Dialog and Dropdown Menu were not imported because they would add `@rn-primitives` packages, and the design needs only a single-question dialog and a short anchored list.
+

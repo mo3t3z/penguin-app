@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { securePkceReady } from '@/lib/webcrypto';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { createURL } from 'expo-linking';
 import { Platform } from 'react-native';
@@ -23,7 +24,11 @@ export async function signIn(email: string, password: string) {
   const { error } = await client().auth.signInWithPassword({ email: email.trim(), password });
   if (error) throw error;
 }
+// Each request that starts an email link flow first confirms that this device can do
+// PKCE with a secure verifier and the S256 method. If it cannot, the request is not
+// sent at all; it is never sent with the weaker "plain" method.
 export async function signUp(email: string, password: string) {
+  await securePkceReady();
   const { data, error } = await client().auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: authCallbackUrl() } });
   if (error) throw error;
   return { hasSession: Boolean(data.session) };
@@ -33,6 +38,7 @@ export async function signOut() {
   if (error) throw error;
 }
 export async function resendVerification(email: string) {
+  await securePkceReady();
   const { error } = await client().auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: authCallbackUrl() } });
   if (error) throw error;
 }
@@ -42,6 +48,8 @@ export async function resendVerification(email: string) {
 // provider refused to send, which the screen shows in development builds to make a
 // broken SMTP setup visible; it is never shown in production.
 export async function requestPasswordRecovery(email: string): Promise<{ deliveryFailed: boolean }> {
+  // Outside the try: an insecure device is reported, not hidden behind the neutral message.
+  await securePkceReady();
   try {
     const { error } = await client().auth.resetPasswordForEmail(email.trim(), { redirectTo: authCallbackUrl() });
     return { deliveryFailed: isEmailDeliveryFailure(error) };

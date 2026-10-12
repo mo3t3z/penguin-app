@@ -5,8 +5,10 @@ import {
   buildMessagePage,
   chatCursorFilter,
   CONVERSATION_PAGE_SIZE,
+  isChatUuid,
   MESSAGE_PAGE_SIZE,
   normalizeMessageContent,
+  readCursorsFor,
   requireChatUuid,
   type ChatCursor,
   type ConversationSummary,
@@ -101,6 +103,29 @@ export async function sendMessage({ messageId, conversationId, content }: {
     content: data.content,
     created_at: data.created_at,
   };
+}
+
+// The caller's own read cursors for these conversations. Row-level security
+// returns no one else's, so this never says what the other student has read.
+export async function listReadCursors(conversationIds: readonly string[], options: { signal?: AbortSignal } = {}) {
+  const ids = conversationIds.map(requireChatUuid);
+  if (!ids.length) return readCursorsFor([], []);
+  let request = client().from('conversation_reads').select('conversation_id,last_read_at').in('conversation_id', ids);
+  if (options.signal) request = request.abortSignal(options.signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return readCursorsFor(ids, data);
+}
+
+// The newest message the caller sent here that the other student has read, or
+// null. The server answers with an identifier of the caller's own message only:
+// the other student's read cursor and its time are never sent to this device.
+export async function getReadReceipt(conversationId: string, options: { signal?: AbortSignal } = {}) {
+  let request = client().rpc('get_read_receipt', { p_conversation_id: requireChatUuid(conversationId) });
+  if (options.signal) request = request.abortSignal(options.signal);
+  const { data, error } = await request;
+  if (error) throw error;
+  return isChatUuid(data) ? data.toLowerCase() : null;
 }
 
 export async function markConversationRead(conversationId: string) {

@@ -15,22 +15,25 @@ import type { PublicProfile } from './service';
 const tabs = [{ key: 'posts', label: 'Posts' }, { key: 'about', label: 'About' }] as const;
 type ProfileTab = typeof tabs[number]['key'];
 
-// One layout for "My profile" and "Student profile": the identity header, the
-// Posts / About tabs, and that student's posts. Only the owner gets `actions`
-// (edit, log out) and the "Create a post" empty state.
-export function ProfileScreen({ profile, studies, own, onBack, actions, notice }: {
+// One layout for your own profile and another student's: the header, the centred
+// identity block, the Posts / About tabs, and that student's posts. Your own
+// profile shows @username and one header action (More options) and sits under the
+// navigation; another student's is a pushed screen with Back only. `actions` is the
+// identity block's primary button.
+export function ProfileScreen({ profile, studies, own, onBack, actions, headerAction, notice }: {
   profile: PublicProfile;
   studies: ProfileStudyDetails;
   own: boolean;
   onBack?: () => void;
   actions?: ReactNode;
+  headerAction?: ReactNode;
   notice?: ReactNode;
 }) {
   const [tab, setTab] = useState<ProfileTab>('posts');
   const firstName = profileDisplayName(profile.display_name).split(/\s+/)[0];
-  const header = <View className="gap-5">
-    <ProfileHeader profile={profile} studies={studies} own={own} actions={actions} />
+  const header = <View>
     {notice}
+    <ProfileHeader profile={profile} studies={studies} own={own} actions={actions} />
     <SegmentedTabs tabs={tabs} value={tab} onChange={setTab} />
   </View>;
   const noPosts = own
@@ -39,13 +42,19 @@ export function ProfileScreen({ profile, studies, own, onBack, actions, notice }
       actionLabel="Create a post" onAction={() => router.push('/create-post')} />
     : <StatePanel icon={NotebookPen} title="No posts yet" description={`${firstName} hasn’t shared anything yet.`} />;
   return <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-    <TopBar title={own ? 'My profile' : 'Student profile'} onBack={onBack} />
+    <TopBar
+      title={own && profile.username ? `@${profile.username}` : undefined}
+      brand={false}
+      onBack={onBack}
+      actions={headerAction}
+    />
     <FeedList
       key={profile.id}
       authorId={profile.id}
       header={header}
       emptyState={noPosts}
       replacement={tab === 'about' ? <ProfileAbout profile={profile} studies={studies} /> : undefined}
+      underNavigation={own}
     />
   </SafeAreaView>;
 }

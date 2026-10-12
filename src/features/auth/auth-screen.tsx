@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Link, router } from 'expo-router';
 import { LockKeyhole, Mail } from 'lucide-react-native';
-import { PenguinMark } from '@/components/brand-mark';
+import { PenguinWordmark } from '@/components/penguin-wordmark';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { FormField } from '@/components/ui/form-field';
@@ -46,8 +46,8 @@ export function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
   return <AuthFrame onBack={() => goBackOr('/welcome')}>
     <View className="gap-2">
       {creating
-        ? <Text className="font-inter-semibold text-micro uppercase tracking-wide text-primary">Welcome to Penguin</Text>
-        : <View className="pb-2"><PenguinMark size={48} /></View>}
+        ? <Text className="text-footnote font-inter-semibold text-primary-text">Welcome to Penguin</Text>
+        : <View className="pb-2"><PenguinWordmark size="auth" /></View>}
       <Text variant="h2">{creating ? 'Your next chapter starts here.' : 'Good to see you.'}</Text>
       <Text variant="lead">{creating ? 'Join a community made for students, by students.' : 'Your student community is right here.'}</Text>
     </View>
@@ -63,7 +63,7 @@ export function AuthScreen({ mode }: { mode: 'login' | 'signup' }) {
       onChangeText={setConfirmation} secureTextEntry autoCapitalize="none" autoCorrect={false} autoComplete="new-password"
       editable={!busy} required error={submitted ? confirmationError : undefined} onSubmitEditing={() => void submit()} /> : null}
     {!creating && !busy ? <Link href="/forgot-password" asChild>
-      <Button variant="link" className="-my-2 self-end px-0"><Text className="text-label">Forgot password?</Text></Button>
+      <Button variant="link" className="-my-2 self-end px-0"><Text className="text-footnote">Forgot password?</Text></Button>
     </Link> : null}
     {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
     <Button loading={busy} onPress={() => void submit()}><Text>{creating ? 'Create account' : 'Log in'}</Text></Button>

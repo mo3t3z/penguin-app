@@ -226,3 +226,78 @@ Not yet run on a device (tracked in `docs/android-acceptance-checklist.md`):
 `.easignore` repeats every `.gitignore` rule (EAS uses it instead of `.gitignore`) and
 also leaves out `docs/`, `design-reference/`, `tests/`, `supabase/` and `.claude/`,
 none of which the app imports. `.env` stays excluded.
+
+## PKCE S256 and the deprecated lock option (2026-10-09)
+
+Status: JavaScript-only change with automated tests. The user re-ran the email flows
+with it on the installed Android development APK on 2026-10-09; see "Verified on Android
+with this change" below. The S256 method itself has not been observed directly on the
+device or the server.
+
+### What was wrong
+
+React Native has no `crypto.subtle`, so the auth library logged "WebCrypto API is not
+supported" and sent the PKCE challenge with the `plain` method, where the challenge
+equals the verifier. If the runtime had no `crypto` object at all, the library also
+built the verifier with `Math.random`.
+
+### What changed
+
+- `src/lib/webcrypto-core.ts` and `src/lib/webcrypto.ts` provide the two functions the
+  library needs, `crypto.getRandomValues` and `crypto.subtle.digest` (SHA-256 only),
+  from `expo-crypto`, which uses the operating system's secure random source and hash.
+  Existing runtime implementations are never replaced.
+- `src/lib/supabase.ts` imports that module before the Supabase client is created, and
+  no longer passes the deprecated `lock: processLock` option.
+- Sign-up, resend and password reset first run a self-check on the device: a random
+  source that actually varies, and a SHA-256 that turns the published RFC 7636 test
+  verifier into its published S256 challenge. If the check fails the request is not
+  sent, and the student sees "This device can't complete secure sign-in right now."
+  There is no fallback to `plain` or to `Math.random`.
+- `expo-crypto` was already a dependency when the development APK was built, so no new
+  build is needed.
+
+The shim implements `digest` only. `auth.getClaims()` (local JWT verification), which
+the app does not use, would need `importKey` and `verify` as well.
+
+### How it is verified
+
+- Automated (`tests/auth-pkce.test.mjs`): the real auth library from `node_modules`
+  returns `plain` without the support and `s256` with it, and the challenge equals the
+  SHA-256 of the stored verifier. The random source and hash in these tests come from
+  Node, not from the phone.
+- On the device: the "WebCrypto API is not supported" and "lock option is deprecated"
+  warnings no longer appear in Metro, and both email flows still complete.
+- On the server, with no secret shown, in the Supabase SQL editor after requesting an
+  email from the phone:
+
+      select code_challenge_method, authentication_method, created_at
+      from auth.flow_state order by created_at desc limit 5;
+
+  The newest rows must show `s256`. Rows from before this change show `plain`.
+  This query has NOT been run yet.
+
+### Verified on Android with this change (2026-10-09)
+
+Confirmed by the user on the installed Android development APK:
+
+| Scenario | Result |
+|---|---|
+| "WebCrypto API is not supported" and "lock option is deprecated" warnings no longer appear | PASS |
+| New account: confirmation email and deep link into the app | PASS |
+| Password recovery email and deep link to the reset screen | PASS |
+| Password update, then log in with the new password | PASS |
+| Session persists after closing and reopening the app | PASS |
+
+What this does and does not establish about S256:
+
+- Indirect evidence: the auth library prints the WebCrypto warning in exactly the code
+  path that selects `plain`, and that warning is gone; and the email requests are only
+  sent after the device self-check (secure random source and a correct SHA-256) passes,
+  and they were sent.
+- Not established: nobody has yet read the method actually recorded for a request made
+  from the phone. That is the `auth.flow_state` query above, still DEFERRED.
+
+Still deferred for this change: the `auth.flow_state` check, logging out and in as a
+different account, and an automatic session refresh after the access token expires.
+All Sprint 1 scenarios listed as deferred earlier in this document remain deferred.

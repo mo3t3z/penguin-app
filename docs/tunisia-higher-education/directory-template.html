@@ -1,0 +1,50 @@
+<div id="tn-directory" dir="rtl">
+  <h2>الجامعات العمومية واختصاصاتها</h2>
+  <div class="viz-controls">
+    <label class="form-label">الجامعة أو الجهة المشرفة<select class="form-select" id="tn-university"></select></label>
+    <label class="form-label">المؤسسة<select class="form-select" id="tn-institution"></select></label>
+    <label class="form-label">الشهادة<select class="form-select" id="tn-degree"></select></label>
+    <label class="form-label">البحث في الاختصاصات<input class="form-control" id="tn-search" type="search" placeholder="مثال: إعلامية، طب، قانون"></label>
+  </div>
+  <p id="tn-count" aria-live="polite"></p>
+  <div id="tn-results"></div>
+  <div class="viz-row"><button class="btn" id="tn-prev" type="button">السابق</button><span id="tn-page"></span><button class="btn" id="tn-next" type="button">التالي</button></div>
+  <p class="text-small">المصدر: الدليل التونسي لعروض التكوين الجامعي · استخراج 9 أكتوبر 2026 · السجلات لا تؤكد فتح التسجيل حاليًا.</p>
+</div>
+<script type="application/json" id="tn-data">__DATA__</script>
+<script>
+(() => {
+ const root=document.getElementById('tn-directory');
+ const data=JSON.parse(document.getElementById('tn-data').textContent);
+ const rows=data.rows.map(r=>r.map(i=>data.dict[i]));
+ const el=id=>root.querySelector('#tn-'+id);
+ const uni=el('university'),inst=el('institution'),degree=el('degree'),search=el('search');
+ let page=0;const size=12;
+ const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f\u064B-\u065F]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي');
+ function options(select,values,label){select.replaceChildren(new Option(label,''),...Array.from(new Set(values)).sort((a,b)=>a.localeCompare(b,'ar')).map(v=>new Option(v,v)));}
+ options(uni,rows.map(r=>r[0]),'كل الجامعات والجهات');
+ function institutions(){options(inst,rows.filter(r=>!uni.value||r[0]===uni.value).map(r=>r[1]),'كل المؤسسات');}
+ institutions();options(degree,rows.map(r=>r[2]),'كل الشهادات');
+ function render(){
+  const q=norm(search.value.trim());
+  const filtered=rows.filter(r=>(!uni.value||r[0]===uni.value)&&(!inst.value||r[1]===inst.value)&&(!degree.value||r[2]===degree.value)&&(!q||norm(r.slice(0,5).join(' ')).includes(q)));
+  const pages=Math.max(1,Math.ceil(filtered.length/size));page=Math.min(page,pages-1);
+  el('count').textContent=filtered.length+' سجل تكوين • '+new Set(filtered.map(r=>r[1])).size+' مؤسسة';
+  const list=el('results');list.replaceChildren();
+  for(const r of filtered.slice(page*size,(page+1)*size)){
+   const section=document.createElement('section');
+   const h=document.createElement('h3');h.textContent=r[4];section.append(h);
+   for(const text of [r[0]+' — '+r[1],r[2]+' · '+r[3],'فترة التأهيل كما بالمصدر: '+(r[5]||'غير مبيّنة')+' · '+r[6]]){const p=document.createElement('p');p.textContent=text;section.append(p);}
+   section.append(document.createElement('hr'));list.append(section);
+  }
+  if(!filtered.length)list.textContent='لا توجد نتائج مطابقة';
+  el('page').textContent=(page+1)+' / '+pages;el('prev').disabled=page===0;el('next').disabled=page===pages-1;
+ }
+ function save(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{university:uni.value,institution:inst.value,degree:degree.value,search:search.value},privateContent:{page}}).catch(()=>{});}
+ uni.addEventListener('change',()=>{institutions();page=0;render();save();});
+ for(const e of [inst,degree,search])e.addEventListener(e===search?'input':'change',()=>{page=0;render();save();});
+ el('prev').addEventListener('click',()=>{page--;render();save();});el('next').addEventListener('click',()=>{page++;render();save();});
+ function restore(s){if(!s)return;const m=s.modelContent||{};uni.value=m.university||'';institutions();inst.value=m.institution||'';degree.value=m.degree||'';search.value=m.search||'';page=Math.max(0,Number(s.privateContent?.page)||0);render();}
+ render();restore(window.openai?.widgetState);window.addEventListener('openai:set_globals',e=>restore(e.detail?.globals?.widgetState));
+})();
+</script>

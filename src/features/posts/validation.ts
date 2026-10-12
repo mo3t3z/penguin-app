@@ -35,3 +35,9 @@ export function feedCursorFilter(cursor: FeedCursor): string {
   // Strict validation prevents injecting additional PostgREST filter syntax.
   return `created_at.lt.${stamp},and(created_at.eq.${stamp},id.lt.${id})`;
 }
+
+// Whether leaving Create now would lose something: any text that is not only
+// spaces, or at least one chosen photo.
+export function hasPostDraft(content: string, imageCount: number) {
+  return content.trim().length > 0 || imageCount > 0;
+}

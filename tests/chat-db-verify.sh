@@ -17,8 +17,11 @@ psql_as() { docker exec -i "$NAME" psql -U postgres -h localhost -d postgres -v 
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 docker run -d --name "$NAME" -e POSTGRES_PASSWORD=localonly "$IMAGE" >/dev/null
 trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT
-for _ in $(seq 1 60); do
-  if docker exec "$NAME" psql -U postgres -h localhost -d postgres -Atc 'select 1' >/dev/null 2>&1; then break; fi
+# The image answers queries from a temporary server while it is still initializing,
+# then restarts. Wait for the final server, or migrations can be cut off halfway.
+for _ in $(seq 1 90); do
+  if docker logs "$NAME" 2>&1 | grep -q 'PostgreSQL init process complete' \
+     && docker exec "$NAME" psql -U postgres -h localhost -d postgres -Atc 'select 1' >/dev/null 2>&1; then break; fi
   sleep 2
 done
 sleep 3
@@ -26,6 +29,7 @@ sleep 3
 docker exec "$NAME" mkdir -p /work/supabase /work/tests
 docker cp "$ROOT/supabase/migrations" "$NAME:/work/supabase/" >/dev/null
 docker cp "$ROOT/tests/chat-integration.sql" "$NAME:/work/tests/" >/dev/null
+docker cp "$ROOT/tests/chat-realtime-integration.sql" "$NAME:/work/tests/" >/dev/null
 docker cp "$ROOT/tests/chat-concurrency.sh" "$NAME:/work/tests/" >/dev/null
 
 echo "== migrations =="
@@ -43,6 +47,16 @@ fi
 grep -q 'chat integration: all assertions passed' /tmp/penguin-chat-integration.log
 echo "assertions run: $(grep -c 'select public.test_assert(' "$ROOT/tests/chat-integration.sql")"
 echo "chat integration: all assertions passed"
+
+echo "== realtime integration (Sprint 6B) =="
+if ! psql_as -f /work/tests/chat-realtime-integration.sql >/tmp/penguin-chat-realtime.log 2>&1; then
+  grep -E 'ERROR|NOTICE|assertion' /tmp/penguin-chat-realtime.log | tail -20
+  echo "chat realtime integration: FAILED"
+  exit 1
+fi
+grep -q 'chat realtime integration: all assertions passed' /tmp/penguin-chat-realtime.log
+echo "assertions run: $(grep -c 'select public.test_assert(' "$ROOT/tests/chat-realtime-integration.sql")"
+echo "chat realtime integration: all assertions passed"
 
 echo "== concurrency =="
 docker exec "$NAME" bash /work/tests/chat-concurrency.sh

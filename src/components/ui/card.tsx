@@ -4,10 +4,10 @@ import { View } from 'react-native';
 
 function Card({ className, variant = 'surface', ...props }: React.ComponentProps<typeof View> & { variant?: 'surface' | 'outlined' | 'muted' | 'highlighted' }) {
   return (
-    <TextClassContext.Provider value="text-card-foreground">
+    <TextClassContext.Provider value="text-foreground">
       <View
         className={cn(
-          'bg-card border-border flex flex-col gap-4 rounded-lg border py-4',
+          'bg-card border-border flex flex-col gap-4 rounded-md border py-4',
           variant === 'outlined' && 'bg-transparent',
           variant === 'muted' && 'bg-muted border-transparent',
           variant === 'highlighted' && 'bg-accent border-transparent',
@@ -34,7 +34,7 @@ function CardTitle({
       ref={ref}
       role="heading"
       aria-level={3}
-      className={cn('text-lead font-inter-semibold', className)}
+      className={cn('text-headline font-inter-semibold', className)}
       {...props}
     />
   );
@@ -44,7 +44,7 @@ function CardDescription({
   className,
   ...props
 }: React.ComponentProps<typeof Text> & React.RefAttributes<typeof Text>) {
-  return <Text className={cn('text-muted-foreground text-label', className)} {...props} />;
+  return <Text className={cn('text-muted-foreground text-footnote', className)} {...props} />;
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<typeof View> & React.RefAttributes<View>) {

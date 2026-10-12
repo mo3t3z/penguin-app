@@ -1,7 +1,8 @@
 # Sprint 6A: private chat foundation
 
-Status: deployed to the hosted development project. No dependency was added. There is
-no live delivery yet; that is Sprint 6B.
+Status: deployed to the hosted development project. No dependency was added. Live
+delivery, receipts and typing are Sprint 6B: see `docs/chat-realtime.md`. Its migration
+is not applied to the hosted project.
 
 ## Deployment status
 
@@ -46,14 +47,23 @@ Do not run the chat migration again on this project; it would fail with "already
 ## What is included
 
 - One-to-one text conversations between students who finished onboarding.
-- Messages entry on Home (mail button) and a Message button on other students' profiles.
+- Messages tab in the bottom bar, a mail button on Home, and a Message button on other
+  students' profiles.
 - Conversation list with last-message preview; chat screen with the newest 30 messages,
   older pages by cursor, optimistic sending and Retry.
+- New message screen (`/messages/new`): search for one student, or pick one from your
+  existing conversations. It opens or creates the one-to-one conversation through
+  `get_or_create_conversation`.
+- Unread dot and an All / Unread filter in the list. Both come from the student's own row
+  in `conversation_reads` (read with `SELECT`, no schema change): a conversation is unread
+  when its last message is from the other side and newer than that cursor. It is a yes or
+  no, not a count, and the filter only covers conversations already loaded.
 - Blocking, enforced in the database. Rate limits, enforced in the database.
 - History that survives the other student's account deletion.
 
-Not included: Realtime, push, typing, presence, attachments, groups, read receipts,
-unread indicators, message deletion, local persistence.
+Not included: Realtime, push, typing, presence, calls, attachments, voice messages,
+groups, message requests, read receipts, unread counts, conversation search, message
+deletion, local persistence. The interface shows no control for any of these.
 
 ## Schema
 
@@ -61,7 +71,7 @@ unread indicators, message deletion, local persistence.
 |---|---|
 | `conversations` | One row per pair. `user_low < user_high`, unique pair. Summary columns (`last_message_at`, `last_message_sender_id`, `last_message_preview`) are written only by the send function. |
 | `messages` | Client-generated `id`, `conversation_id`, `sender_id`, `content` (1–2,000 characters, not blank), server `created_at`. Never updated. |
-| `conversation_reads` | One read cursor per participant. Prepared for Sprint 6B; not shown in the UI. |
+| `conversation_reads` | One read cursor per participant. The app reads the caller's own cursor for the unread dot. |
 | `user_blocks` | `(blocker_id, blocked_id)` primary key, no self-block. |
 
 There is no participants table: a one-to-one conversation is fully described by its two

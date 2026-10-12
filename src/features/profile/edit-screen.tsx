@@ -28,7 +28,7 @@ function leave() {
   router.dismissTo('/account');
 }
 
-// Figma "Edit profile": title bar with back and Save, then a scrolling form.
+// Edit profile: title bar with back and Save, then a scrolling form.
 function Frame({ children, onBack, action }: PropsWithChildren<{ onBack: () => void; action?: ReactNode }>) {
   return <SafeAreaView className="flex-1 bg-background">
     <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -107,7 +107,7 @@ function EditForm({ profile, initialInstitution, initialField }: {
     <Text>Save</Text>
   </Button>}>
     <View className="items-center">
-      <UserAvatar name={profileDisplayName(displayName)} uri={profile.avatar_url} size="profile" />
+      <UserAvatar name={profileDisplayName(displayName)} uri={profile.avatar_url} size="xl" />
     </View>
     <FormField label="Display name" required value={displayName} onChangeText={setDisplayName} maxLength={80}
       autoComplete="name" autoCapitalize="words" editable={!busy} hint="Up to 80 characters." />

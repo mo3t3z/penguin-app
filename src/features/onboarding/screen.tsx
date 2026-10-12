@@ -3,7 +3,7 @@ import { BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, View
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowRight, BookOpen, Building2, Compass, GraduationCap, MessagesSquare, Users } from 'lucide-react-native';
-import { PenguinMark } from '@/components/brand-mark';
+import { PenguinWordmark } from '@/components/penguin-wordmark';
 import { InfoRow } from '@/components/forms/info-row';
 import { SelectorOption } from '@/components/forms/selector-option';
 import { TopBar } from '@/components/navigation/top-bar';
@@ -126,7 +126,7 @@ export function OnboardingScreen({ profile }: { profile: Profile }) {
       <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerClassName="grow px-5 pb-8 pt-2">
         <View className="gap-5">
           <OnboardingProgress step={step} />
-          {step === 0 ? <PenguinMark size={64} /> : null}
+          {step === 0 ? <PenguinWordmark size="onboarding" /> : null}
           <View className="gap-2"><Text variant="h2">{onboardingSteps[step].title}</Text><Text variant="lead">{onboardingSteps[step].description}</Text></View>
           {step === 0 ? <Card variant="muted"><CardContent className="gap-4">
             <InfoRow icon={Users} label="Connect" value="Meet students from your campus" />
@@ -153,7 +153,7 @@ export function OnboardingScreen({ profile }: { profile: Profile }) {
           {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
           <View className="gap-3">
             <Button loading={busy} disabled={!canContinueStep(step, selections)} onPress={() => void (review ? complete() : next())}>
-              {review && !busy ? <Icon as={ArrowRight} size={18} color="primary-foreground" /> : null}
+              {review && !busy ? <Icon as={ArrowRight} size={20} color="primary-foreground" /> : null}
               <Text>{primaryActionLabel(step, busy)}</Text>
             </Button>
             {review ? <Button variant="secondary" disabled={busy} onPress={() => move(1)}><Text>Edit my details</Text></Button> : null}

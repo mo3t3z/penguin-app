@@ -1,0 +1,135 @@
+# Working tree before Sprint 7A (recorded 2026-10-11T01:25:34, branch fix/auth-pkce-s256, HEAD 7d84e18)
+# Output of: git status --porcelain --untracked-files=all. Everything listed here predates Sprint 7A.
+ M app.json
+ M docs/android-acceptance-checklist.md
+ M docs/auth-email-flows.md
+ M docs/chat.md
+ M docs/component-provenance.md
+ M docs/design-system.md
+ M src/app/(protected)/(tabs)/_layout.tsx
+ M src/app/(protected)/(tabs)/account.tsx
+ M src/app/(protected)/(tabs)/home.tsx
+ M src/app/(protected)/_layout.tsx
+ D src/app/(protected)/messages/index.tsx
+ M src/app/(public)/welcome.tsx
+ M src/components/brand-mark.tsx
+ M src/components/forms/info-row.tsx
+ M src/components/forms/selector-option.tsx
+ M src/components/navigation/segmented-tabs.tsx
+ M src/components/navigation/tab-bar.tsx
+ M src/components/navigation/top-bar.tsx
+ M src/components/sheets/option-sheet.tsx
+ M src/components/sheets/selector-sheet.tsx
+ M src/components/sheets/sheet-shell.tsx
+ M src/components/social/identity-row.tsx
+ M src/components/social/state-panel.tsx
+ M src/components/social/user-avatar.tsx
+ M src/components/ui/avatar.tsx
+ M src/components/ui/badge.tsx
+ M src/components/ui/button.tsx
+ M src/components/ui/card.tsx
+ M src/components/ui/form-field.tsx
+ M src/components/ui/icon-button.tsx
+ M src/components/ui/icon-tile.tsx
+ M src/components/ui/icon.tsx
+ M src/components/ui/input.tsx
+ M src/components/ui/password-field.tsx
+ M src/components/ui/separator.tsx
+ M src/components/ui/text.tsx
+ M src/dev/component-gallery.tsx
+ M src/features/auth/auth-errors.ts
+ M src/features/auth/auth-frame.tsx
+ M src/features/auth/auth-screen.tsx
+ M src/features/auth/email-frame.tsx
+ M src/features/auth/service.ts
+ M src/features/chat/chat-screen.tsx
+ M src/features/chat/chat.ts
+ M src/features/chat/composer.tsx
+ M src/features/chat/conversation-row.tsx
+ M src/features/chat/conversations-screen.tsx
+ M src/features/chat/message-bubble.tsx
+ M src/features/chat/message-student-button.tsx
+ M src/features/chat/service.ts
+ M src/features/chat/use-chat.ts
+ M src/features/chat/use-conversations.ts
+ M src/features/comments/comment-item.tsx
+ M src/features/comments/comments-screen.tsx
+ D src/features/discover/discover-scopes.ts
+ M src/features/discover/discover-screen.tsx
+ M src/features/discover/student-result-row.tsx
+ M src/features/onboarding/progress.tsx
+ M src/features/onboarding/screen.tsx
+ M src/features/onboarding/username-field.tsx
+ M src/features/posts/create-screen.tsx
+ M src/features/posts/feed-list.tsx
+ M src/features/posts/post-card.tsx
+ M src/features/posts/post-media-grid.tsx
+ M src/features/posts/post-presentation.ts
+ M src/features/posts/selected-image-preview.tsx
+ M src/features/posts/validation.ts
+ M src/features/profile/edit-screen.tsx
+ M src/features/profile/profile-about.tsx
+ M src/features/profile/profile-header.tsx
+ M src/features/profile/profile-screen.tsx
+ M src/features/profile/profile-skeleton.tsx
+ M src/lib/database.types.ts
+ M src/lib/supabase.ts
+ M src/lib/utils.ts
+ M src/theme/provider.tsx
+ M src/theme/tokens.ts
+ M tailwind.config.js
+ M tests/chat-db-verify.sh
+ M tests/chat.test.mjs
+ M tests/discover-posts.test.mjs
+ M tests/discover-search.test.mjs
+ M tests/theme-contrast.test.mjs
+?? assets/penguin-adaptive-foreground.png
+?? assets/penguin-adaptive-monochrome.png
+?? assets/penguin-app-icon.png
+?? assets/penguin-favicon.png
+?? assets/penguin-icon-small.png
+?? assets/penguin-logo-horizontal.png
+?? assets/penguin-mascot-small.png
+?? assets/penguin-mascot.png
+?? docs/UI_UX_QUALITY_AUDIT.md
+?? docs/build-tunisia-directory.cjs
+?? docs/chat-realtime.md
+?? docs/sprint-7a-baseline-inventory.txt
+?? scripts/backup-hosted-encrypted.sh
+?? src/app/(protected)/(tabs)/groups.tsx
+?? src/app/(protected)/(tabs)/messages.tsx
+?? src/app/(protected)/messages/new.tsx
+?? src/components/navigation/nav-layout.ts
+?? src/components/navigation/use-nav-layout.ts
+?? src/components/penguin-wordmark.tsx
+?? src/components/social/post-action.tsx
+?? src/components/ui/chip.tsx
+?? src/components/ui/dialog.tsx
+?? src/components/ui/menu.tsx
+?? src/components/ui/toast.tsx
+?? src/features/chat/new-message-screen.tsx
+?? src/features/chat/realtime-service.ts
+?? src/features/chat/realtime.ts
+?? src/features/chat/typing-indicator.tsx
+?? src/features/chat/use-typing.ts
+?? src/features/discover/discover-results.ts
+?? src/features/home/feed-composer.tsx
+?? src/features/home/sample-data.ts
+?? src/features/home/sample-feed.tsx
+?? src/features/home/sample-post-card.tsx
+?? src/features/home/stories-rail.tsx
+?? src/features/home/use-sample-interactions.ts
+?? src/features/posts/post-search-result.tsx
+?? src/lib/share-text.ts
+?? src/lib/use-app-active.ts
+?? src/lib/use-reduce-motion.ts
+?? src/lib/webcrypto-core.ts
+?? src/lib/webcrypto.ts
+?? src/theme/shadow.ts
+?? supabase/migrations/20261011090000_chat_realtime.sql
+?? tests/auth-pkce.test.mjs
+?? tests/chat-realtime-integration.sql
+?? tests/chat-realtime.test.mjs
+?? tests/nav-layout.test.mjs
+?? tests/ux-refinements.test.mjs
+# docs/tunisia-higher-education/: 5 untracked files (not listed individually)

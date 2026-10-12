@@ -3,7 +3,7 @@ import { Pencil, type LucideIcon } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 
-// Figma "Profile information row": icon, small label and value. With onEdit the
+// Profile information row: icon, small label and value. With onEdit the
 // row becomes a button that jumps to the matching edit step.
 export function InfoRow({ icon, label, value, onEdit, editLabel, editIcon = Pencil, disabled }: {
   icon: LucideIcon;
@@ -15,7 +15,7 @@ export function InfoRow({ icon, label, value, onEdit, editLabel, editIcon = Penc
   disabled?: boolean;
 }) {
   const content = <>
-    <Icon as={icon} size={22} color="primary" />
+    <Icon as={icon} size={24} color="muted-foreground" />
     <View className="min-w-0 flex-1">
       <Text variant="caption" className="text-muted-foreground">{label}</Text>
       <Text className="font-inter-medium">{value}</Text>

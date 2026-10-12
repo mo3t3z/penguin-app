@@ -1,28 +1,34 @@
-import { View } from 'react-native';
-import Svg, { Ellipse, Path } from 'react-native-svg';
-import { Text } from '@/components/ui/text';
+import { Image } from 'react-native';
+import { PenguinWordmark } from '@/components/penguin-wordmark';
 import { usePenguinTheme } from '@/theme/provider';
-import { colors } from '@/theme/tokens';
 
-const sizes = { nav: { mark: 28, text: 23, line: 28 }, hero: { mark: 48, text: 32, line: 40 } } as const;
+// Raster brand art cut from the supplied references. The small files serve marks
+// up to 96px; larger marks use the full-size mascot.
+const mascot = require('../../assets/penguin-mascot.png');
+const mascotSmall = require('../../assets/penguin-mascot-small.png');
+const iconSmall = require('../../assets/penguin-icon-small.png');
+const MASCOT_ASPECT = 1148 / 1113;
+const SMALL_LIMIT = 96;
 
-export function PenguinMark({ size = 28 }: { size?: number }) {
+// The mascot as an illustration. It is not the in-app logo (that is the text-only
+// wordmark below); today only the Welcome artwork uses it. Its head is black, so
+// on the dark theme it would disappear into the page background: 'auto' shows the
+// standalone mascot on light and the app icon tile on dark, and 'mascot' always
+// shows the standalone mascot, for a surface that is not the page background.
+export function PenguinMark({ size = 28, variant = 'auto' }: { size?: number; variant?: 'auto' | 'mascot' }) {
   const { scheme } = usePenguinTheme();
-  const palette = colors[scheme];
-  return <Svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden>
-    <Path
-      d="M24 2.4C14.4 2.4 11.52 10.2545 11.52 19.0909L6.72 35.7818L13.44 32.8364L15.36 45.6H32.64L34.56 32.8364L41.28 35.7818L36.48 19.0909C36.48 10.2545 33.6 2.4 24 2.4Z"
-      fill={palette.foreground}
-    />
-    <Ellipse cx={24} cy={28} rx={7.68} ry={12} fill={palette.background} />
-    <Path d="M19.68 12.96H28.32L24 17.76L19.68 12.96Z" fill={palette.primary} />
-  </Svg>;
+  if (variant === 'auto' && scheme === 'dark') {
+    return <Image source={iconSmall} style={{ width: size, height: size, borderRadius: size * 0.23 }} aria-hidden />;
+  }
+  return <Image
+    source={size > SMALL_LIMIT ? mascot : mascotSmall}
+    style={{ width: size * MASCOT_ASPECT, height: size }}
+    resizeMode="contain"
+    aria-hidden
+  />;
 }
 
-export function BrandMark({ variant = 'nav' }: { variant?: keyof typeof sizes }) {
-  const { mark, text, line } = sizes[variant];
-  return <View className="flex-row items-center gap-[9px]" accessible accessibilityRole="header" accessibilityLabel="Penguin">
-    <PenguinMark size={mark} />
-    <Text className="font-inter-bold text-foreground" style={{ fontSize: text, lineHeight: line }}>penguin</Text>
-  </View>;
+// In-app branding is the text-only wordmark: no mascot and no icon tile.
+export function BrandMark({ variant = 'nav' }: { variant?: 'nav' | 'hero' }) {
+  return <PenguinWordmark size={variant} />;
 }

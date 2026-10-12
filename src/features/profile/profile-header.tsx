@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { Building2 } from 'lucide-react-native';
+import { Link } from 'expo-router';
+import { GraduationCap } from 'lucide-react-native';
 import { UserAvatar } from '@/components/social/user-avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,9 +20,11 @@ export type ProfileStudyDetails = {
   retry: () => void;
 };
 
-// Figma "Profile identity": 80px portrait, name, username, bio, then the
-// institution badge and the field and study-level badges. `actions` is the button
-// row underneath; a student profile passes none.
+// The identity block at the top of a profile, centred: 96px portrait, name,
+// username, one study line ("Institution · Field · Level"), the bio in full and one
+// full-width primary action. `actions` is that button: Edit profile on your own
+// profile, Message on another student's. Log out is never here; it lives in the
+// More options menu.
 export function ProfileHeader({ profile, studies, own, actions }: {
   profile: PublicProfile;
   studies: ProfileStudyDetails;
@@ -32,32 +34,29 @@ export function ProfileHeader({ profile, studies, own, actions }: {
   const name = profileDisplayName(profile.display_name);
   const bio = profile.bio?.trim();
   const level = profile.study_level ? studyLevels[profile.study_level] : null;
-  return <View className="gap-4 px-1 pt-4">
-    <UserAvatar name={name} uri={profile.avatar_url} size="profile" />
-    <View className="gap-0.5">
-      <Text variant="h2" accessibilityRole="header">{name}</Text>
-      {profile.username ? <Text variant="lead">@{profile.username}</Text> : null}
+  const study = [studies.institution?.name?.trim(), studies.field?.name?.trim(), level].filter(Boolean).join(' · ');
+  return <View className="items-center gap-3 px-6 pb-6 pt-2">
+    <UserAvatar name={name} uri={profile.avatar_url} size="xl" />
+    <View className="items-center">
+      <Text variant="h2" className="text-center" accessibilityRole="header">{name}</Text>
+      {profile.username ? <Text variant="callout" className="text-muted-foreground">@{profile.username}</Text> : null}
     </View>
-    {bio ? <Text selectable>{bio}</Text>
-      : own ? <Text className="text-muted-foreground">A few words can start a connection. Add a bio in Edit Profile.</Text> : null}
-    {studies.loading ? <View className="gap-2" accessibilityLabel="Loading study details" accessibilityState={{ busy: true }}>
-      <Skeleton className="h-6 w-44 rounded-sm" />
-      <Skeleton className="h-6 w-56 rounded-sm" />
-    </View> : studies.failed ? <View className="items-start gap-1">
-      <Text variant="muted" accessibilityLiveRegion="polite">Study details couldn’t load.</Text>
-      <Button variant="link" className="min-h-12 px-0" onPress={studies.retry}><Text>Retry study details</Text></Button>
-    </View> : <View className="gap-2">
-      {studies.institution ? <View className="flex-row">
-        <Badge variant="subject" className="shrink">
-          <Icon as={Building2} size={12} color="muted-foreground" />
-          <Text numberOfLines={1} className="shrink">{studies.institution.name}</Text>
-        </Badge>
-      </View> : null}
-      <View className="flex-row flex-wrap gap-2">
-        {studies.field ? <Badge variant="subject" className="shrink"><Text numberOfLines={1} className="shrink">{studies.field.name}</Text></Badge> : null}
-        {level ? <Badge variant="subject"><Text>{level}</Text></Badge> : null}
-      </View>
-    </View>}
-    {actions}
+    {studies.loading ? <View className="items-center gap-2" accessibilityLabel="Loading study details" accessibilityState={{ busy: true }}>
+      <Skeleton className="h-3 w-56 rounded-full" />
+      <Skeleton className="h-3 w-40 rounded-full" />
+    </View> : studies.failed ? <View className="flex-row flex-wrap items-center justify-center gap-x-2">
+      <Text variant="callout" className="text-muted-foreground" accessibilityLiveRegion="polite">Study details couldn’t load.</Text>
+      <Button variant="link" className="px-0" accessibilityLabel="Retry study details" onPress={studies.retry}><Text>Retry</Text></Button>
+    </View> : study ? <View className="flex-row justify-center gap-1.5">
+      <View className="pt-0.5"><Icon as={GraduationCap} size={16} color="muted-foreground" /></View>
+      <Text variant="callout" className="shrink text-center">{study}</Text>
+    </View> : null}
+    {bio ? <Text selectable className="max-w-xs text-center">{bio}</Text>
+      : own ? <Link href="/edit-profile" asChild>
+        <Text className="max-w-xs text-center text-muted-foreground" role="link">
+          A few words can start a connection. <Text className="font-inter-medium text-primary-text">Add a bio.</Text>
+        </Text>
+      </Link> : null}
+    {actions ? <View className="self-stretch pt-1">{actions}</View> : null}
   </View>;
 }

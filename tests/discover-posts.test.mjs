@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { discoverScopes, postsPaneState } from '../src/features/discover/discover-scopes.ts';
+import { highlightSegments, POSTS_SEARCH_DELAY_MS, postsSearchKey, STUDENT_ROW_SIZE } from '../src/features/discover/discover-results.ts';
 import { postSearchPatterns, searchKey, termsFromKey } from '../src/features/discover/search-query.ts';
 import {
   beginStudentLoadMore,
@@ -64,7 +64,7 @@ test('search results page with the same cursor as the feed', () => {
 
 test('Home and profile lists pass no search and keep their post-publish refresh', () => {
   const list = read('../src/features/posts/feed-list.tsx');
-  assert.match(list, /search = null, paused = false \}: FeedListProps/);
+  assert.match(list, /search = null, paused = false, underNavigation = false, scrollToTopSignal = 0 \}: FeedListProps/);
   assert.match(list, /usePostsFeed\(\{ authorId, search \}\)/);
   assert.match(list,
     /if \(!userId \|\| event\.userId !== userId\) return;\s*if \(authorId && authorId !== userId\) return;\s*if \(search\) return;\s*list\.current\?\.scrollToOffset\(\{ offset: 0, animated: false \}\);\s*void refresh\(\);/);
@@ -81,45 +81,56 @@ test('a paused post list asks for no further pages and no image URLs', () => {
   assert.match(list, /keyboardDismissMode=\{search \? 'on-drag' : 'none'\}/);
 });
 
-// --- Scope switching --------------------------------------------------------------
+// --- One list, two stages ---------------------------------------------------------
 
-test('Students is the first scope and Posts the second', () => {
-  assert.deepEqual(discoverScopes.map(({ key }) => key), ['students', 'posts']);
+test('students come first and posts follow only once the search has settled', () => {
+  assert.equal(STUDENT_ROW_SIZE, 6);
+  assert.equal(POSTS_SEARCH_DELAY_MS, 800);
+  // Nothing to search for: no posts request, whatever the other values say.
+  assert.equal(postsSearchKey('', '', ''), '');
+  assert.equal(postsSearchKey('', 'maya', 'maya'), '');
+  // Still typing: the settled key trails behind, so no posts are requested.
+  assert.equal(postsSearchKey('maya', '', ''), '');
+  assert.equal(postsSearchKey('maya chen', 'maya', ''), '');
+  // The same search for 800 ms: posts are requested for it.
+  assert.equal(postsSearchKey('maya', 'maya', ''), 'maya');
+  // The keyboard's Search key does not wait.
+  assert.equal(postsSearchKey('maya', '', 'maya'), 'maya');
+  // A submit belongs to the search it was pressed for, not to a later one.
+  assert.equal(postsSearchKey('maya chen', 'maya', 'maya'), '');
+});
+
+test('the screen asks for six students, then posts, and pauses the row behind See all', () => {
   const screen = read('../src/features/discover/discover-screen.tsx');
-  assert.match(screen, /useState<DiscoverScope>\('students'\)/);
-  assert.match(screen, /<SegmentedTabs tabs=\{discoverScopes\} value=\{scope\} onChange=\{setScope\} \/>/);
-});
-
-test('no post list exists before a valid search has settled on the Posts scope', () => {
-  assert.deepEqual(postsPaneState('students', '', ''), { mounted: false, current: false, shown: false, pending: false });
-  assert.deepEqual(postsPaneState('students', 'maya', ''), { mounted: false, current: false, shown: false, pending: false });
-  assert.deepEqual(postsPaneState('posts', '', ''), { mounted: false, current: false, shown: false, pending: false });
-  // Posts just opened: waiting for the debounce, nothing mounted yet.
-  assert.deepEqual(postsPaneState('posts', 'maya', ''), { mounted: false, current: false, shown: false, pending: true });
-});
-
-test('the post list is shown only for the current search on the Posts scope', () => {
-  assert.deepEqual(postsPaneState('posts', 'maya', 'maya'), { mounted: true, current: true, shown: true, pending: false });
-  // Back on Students: still mounted with its results, but hidden and paused.
-  assert.deepEqual(postsPaneState('students', 'maya', 'maya'), { mounted: true, current: true, shown: false, pending: false });
-  // The text changed: the old list is hidden until the new search settles.
-  assert.deepEqual(postsPaneState('posts', 'maya chen', 'maya'), { mounted: true, current: false, shown: false, pending: true });
-  assert.deepEqual(postsPaneState('students', 'maya chen', 'maya'), { mounted: true, current: false, shown: false, pending: false });
-  // Search cleared: no stale posts are shown.
-  assert.deepEqual(postsPaneState('posts', '', 'maya'), { mounted: true, current: false, shown: false, pending: false });
-});
-
-test('the screen pauses whichever pane is not showing', () => {
-  const screen = read('../src/features/discover/discover-screen.tsx');
-  assert.match(screen, /useStudentSearch\(query, \{\s*active: scope === 'students',\s*\}\)/);
-  assert.match(screen, /useDebouncedValue\(key, SEARCH_DEBOUNCE_MS, scope !== 'posts'\)/);
-  assert.match(screen, /key=\{postsKey\}\s*search=\{postsKey\}\s*paused=\{!posts\.shown\}/);
-  assert.match(screen, /if \(scope === 'students' && hasMore && !loadingMore && !loadMoreFailed\) loadMore\(\);/);
-  assert.match(screen, /scope !== 'students' && 'hidden'/);
-  assert.match(screen, /scope !== 'posts' && 'hidden'/);
+  assert.match(screen, /useStudentSearch\(query, \{ pageSize: STUDENT_ROW_SIZE, active: !showAll \}\)/);
+  assert.match(screen, /useStudentSearch\(query, \{ active: showAll \}\)/);
+  assert.match(screen, /useDebouncedValue\(key, POSTS_SEARCH_DELAY_MS\)/);
+  assert.match(screen, /const postsKey = postsSearchKey\(key, settledKey, submittedKey\);/);
+  assert.match(screen, /key=\{postsKey\}\s*search=\{postsKey\}/);
+  // The full list belongs to one search and pages only while it is showing.
+  assert.match(screen, /const showAll = allStudentsKey !== null && allStudentsKey === key;/);
+  assert.match(screen, /if \(showAll && hasMore && !loadingMore && !loadMoreFailed\) loadMore\(\);/);
+  assert.doesNotMatch(screen, /SegmentedTabs/);
   const debounce = read('../src/lib/use-debounced-value.ts');
-  assert.match(debounce, /if \(paused\) return;/);
+  assert.match(debounce, /const timer = setTimeout\(\(\) => setDebounced\(value\), delayMs\);/);
   assert.match(debounce, /return \(\) => clearTimeout\(timer\);/);
+});
+
+test('searched words are highlighted wherever they appear, ignoring case', () => {
+  assert.deepEqual(highlightSegments('Linear algebra and LINEAR maps', ['linear']), [
+    { text: 'Linear', match: true }, { text: ' algebra and ', match: false },
+    { text: 'LINEAR', match: true }, { text: ' maps', match: false },
+  ]);
+  // Post search matches inside words too.
+  assert.deepEqual(highlightSegments('eigenvectors', ['vector']), [
+    { text: 'eigen', match: false }, { text: 'vector', match: true }, { text: 's', match: false },
+  ]);
+  assert.deepEqual(highlightSegments('أمينة في صفاقس', ['صفاقس']).at(-1), { text: 'صفاقس', match: true });
+  assert.deepEqual(highlightSegments('No match here', ['maya']), [{ text: 'No match here', match: false }]);
+  assert.deepEqual(highlightSegments('plain', []), [{ text: 'plain', match: false }]);
+  assert.deepEqual(highlightSegments('', ['maya']), []);
+  // Only normalised words ever become part of the pattern.
+  assert.deepEqual(highlightSegments('a.b (c)', ['.', '(c)']), [{ text: 'a.b (c)', match: false }]);
 });
 
 test('student search starts only when active and not already answered', () => {
@@ -144,7 +155,7 @@ test('pausing mid-page keeps the students already loaded without reporting a fai
 
 // --- Account isolation and navigation ---------------------------------------------
 
-test('both scopes are cleared when the account changes', () => {
+test('students and posts are both cleared when the account changes', () => {
   const route = read('../src/app/(protected)/(tabs)/discover.tsx');
   assert.match(route, /<DiscoverScreen key=\{state\.profile\.id\} profile=\{state\.profile\} \/>/);
   const hook = read('../src/features/posts/use-feed.ts');
@@ -158,6 +169,8 @@ test('post results open author profiles and reuse the feed list for likes and co
   assert.match(screen, /onOpenAuthor=\{openStudent\}/);
   assert.match(screen, /emptyState=\{noPosts\}/);
   assert.doesNotMatch(screen, /PostCard|getFeed|usePostsFeed|signedMediaMemoryCache|console\./);
+  // A search result is compact and opens the post's comments.
+  assert.match(read('../src/features/posts/feed-list.tsx'), /search \? <PostSearchResult\s+post=\{item\}\s+search=\{search\}\s+onOpen=\{openComments\}/);
   const list = read('../src/features/posts/feed-list.tsx');
   assert.match(list, /router\.push\(\{ pathname: '\/comments\/\[postId\]', params: \{ postId \} \}\)/);
 });

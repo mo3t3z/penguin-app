@@ -21,3 +21,13 @@ export function publicationAccessibilityLabel(value: string) {
     timeStyle: 'short',
   }).format(published)}`;
 }
+
+// A feed is for scanning: a post longer than this is cut to POST_PREVIEW_LINES with
+// "Show more". Counted in characters and line breaks because a Text cannot report
+// how many lines it would have needed.
+export const POST_PREVIEW_LINES = 8;
+export const POST_PREVIEW_CHARACTERS = 420;
+
+export function isLongPost(content: string) {
+  return [...content].length > POST_PREVIEW_CHARACTERS || content.split('\n').length > POST_PREVIEW_LINES;
+}

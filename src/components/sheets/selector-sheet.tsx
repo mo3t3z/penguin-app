@@ -25,7 +25,7 @@ function OpenSelectorSheet({ kind, selected, onConfirm, onClose }: Omit<Selector
   </SheetShell>;
 }
 
-// Searchable institution or field list in the Figma bottom sheet.
+// Searchable institution or field list in the bottom sheet.
 export function SelectorSheet({ visible, ...content }: SelectorSheetProps) {
   return visible ? <OpenSelectorSheet {...content} /> : null;
 }

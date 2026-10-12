@@ -11,7 +11,8 @@ const ThemeContext = React.createContext<{
 }>({ preference: 'system', scheme: 'light', setPreference: () => {} });
 
 function variables(palette: typeof colors.light | typeof colors.dark) {
-  return vars(Object.fromEntries(Object.entries(palette).map(([key, hex]) => {
+  // Tokens with alpha (eight digits) cannot be RGB variables; they are applied with `style`.
+  return vars(Object.fromEntries(Object.entries(palette).filter(([, hex]) => hex.length === 7).map(([key, hex]) => {
     const rgb = [1, 3, 5].map(start => parseInt(hex.slice(start, start + 2), 16)).join(' ');
     return [`--${key}`, rgb];
   })));

@@ -4,7 +4,7 @@
     "slug": "penguin",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/penguin-app-icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
@@ -12,15 +12,14 @@
     "android": {
       "package": "com.penguin.student",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/penguin-adaptive-foreground.png",
+        "monochromeImage": "./assets/penguin-adaptive-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/penguin-favicon.png",
       "bundler": "metro"
     },
     "plugins": [

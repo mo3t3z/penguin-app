@@ -15,6 +15,7 @@ import {
   conversationPreview,
   DELETED_STUDENT,
   isChatUuid,
+  isConversationUnread,
   isParticipant,
   markMessageFailed,
   markMessagePending,
@@ -25,6 +26,7 @@ import {
   normalizeMessageContent,
   otherParticipant,
   pendingMessage,
+  readCursorsFor,
   reconcileNewestMessages,
   requireChatUuid,
   startsNewDay,
@@ -357,15 +359,15 @@ test('chat state is scoped to the account and nothing is logged', () => {
   for (const name of readdirSync(directory)) {
     assert.doesNotMatch(readFileSync(new URL(name, directory), 'utf8'), /console\./, name);
   }
-  assert.match(read('../src/app/(protected)/messages/index.tsx'), /<ConversationsScreen key=\{state\.profile\.id\}/);
+  assert.match(read('../src/app/(protected)/(tabs)/messages.tsx'), /<ConversationsScreen key=\{state\.profile\.id\}/);
   assert.match(read('../src/app/(protected)/messages/[conversationId].tsx'),
     /<ChatScreen key=\{`\$\{state\.profile\.id\}:\$\{conversationId\}`\} conversationId=\{conversationId\} \/>/);
 });
 
-test('Messages opens from Home and from another student’s profile, above the tabs', () => {
+test('Messages is a tab, and opens from the navigation and from another student’s profile', () => {
+  // Home has no mail button: one path per task, and Messages is one tap away as a tab.
   const home = read('../src/app/(protected)/(tabs)/home.tsx');
-  assert.match(home, /router\.push\('\/messages'\);/);
-  assert.match(home, /<IconButton icon=\{Mail\} accessibilityLabel="Messages" onPress=\{openMessages\} \/>/);
+  assert.doesNotMatch(home, /IconButton|Mail\b|\/messages/);
   const route = read('../src/app/(protected)/students/[id].tsx');
   assert.match(route, /actions=\{profile\.id === viewerId \? undefined : <MessageStudentButton studentId=\{profile\.id\} \/>\}/);
   const button = read('../src/features/chat/message-student-button.tsx');
@@ -373,9 +375,115 @@ test('Messages opens from Home and from another student’s profile, above the t
   // Only an identifier travels in the route; never message text.
   assert.doesNotMatch(button + read('../src/features/chat/conversations-screen.tsx'), /params: \{[^}]*(content|message|preview)/);
   const bar = read('../src/components/navigation/tab-bar.tsx');
-  assert.deepEqual([...bar.matchAll(/name: '([a-z]+)'/g)].map((match) => match[1]), ['home', 'discover', 'create', 'account']);
+  assert.deepEqual([...bar.matchAll(/name: '([a-z]+)'/g)].map((match) => match[1]), ['home', 'discover', 'create', 'messages', 'account']);
   const screen = read('../src/features/chat/chat-screen.tsx');
   assert.match(screen, /KeyboardAvoidingView/);
+  // One keyboard strategy only, the same on both platforms: no second offset from
+  // keyboard listeners, a vertical offset or a pan layout mode.
+  assert.equal(screen.match(/<KeyboardAvoidingView\b/g).length, 1);
+  assert.match(screen, /<KeyboardAvoidingView className="flex-1" behavior="padding">/);
+  assert.doesNotMatch(screen + read('../src/features/chat/composer.tsx'), /Keyboard\.addListener|keyboardVerticalOffset|useKeyboard|KeyboardAwareScrollView/);
+  assert.doesNotMatch(read('../app.json'), /"softwareKeyboardLayoutMode": "pan"/);
+  // The composer grows to about five lines, then scrolls inside itself.
+  assert.match(read('../src/features/chat/composer.tsx'), /multiline\s+className="max-h-36 /);
   assert.match(screen, /inverted/);
-  assert.doesNotMatch(screen + read('../src/features/chat/message-bubble.tsx'), /Online|Read\b|typing/);
+  // Presence and a "delivered" state cannot be established, so neither is shown.
+  assert.doesNotMatch(screen + read('../src/features/chat/message-bubble.tsx'), /Online|Delivered|Last seen/);
+});
+
+test('the inbox is a tab; conversations and the recipient picker open above the tabs', () => {
+  assert.match(read('../src/app/(protected)/(tabs)/_layout.tsx'), /<Tabs\.Screen name="messages" \/>/);
+  assert.match(read('../src/features/chat/conversations-screen.tsx'), /router\.push\('\/messages\/new'\)/);
+  const picker = read('../src/features/chat/new-message-screen.tsx');
+  // An existing conversation opens directly; otherwise the database finds or creates it.
+  assert.match(picker, /recipient\.conversationId \?\? await getOrCreateConversation\(recipient\.id\)/);
+  assert.match(picker, /router\.replace\(\{ pathname: '\/messages\/\[conversationId\]', params: \{ conversationId \} \}\)/);
+  assert.match(picker, /student\.id !== userId/);
+  assert.match(read('../src/app/(protected)/messages/new.tsx'), /<NewMessageScreen key=\{state\.profile\.id\}/);
+});
+
+test('the chat screens offer nothing the backend lacks', () => {
+  const ui = ['chat-screen', 'composer', 'message-bubble', 'conversations-screen', 'conversation-row', 'new-message-screen']
+    .map((name) => read(`../src/features/chat/${name}.tsx`).replace(/\/\/.*$/gm, '')).join('\n');
+  // No call, attachment, voice or delivery-tick icons, and no presence, group or request wording.
+  assert.doesNotMatch(ui, /\b(Phone|Mic|Paperclip|Video|CheckCheck)\b|Online|Delivered|New group|Requests|Invitations/);
+});
+
+test('unread comes from the student’s own read cursor and is never a count', () => {
+  const me = 'user-me';
+  const base = { last_message_at: '2026-10-09T10:00:00.500000+00:00', last_message_sender_id: 'user-other' };
+  assert.equal(isConversationUnread(base, me, null), true);
+  assert.equal(isConversationUnread(base, me, '2026-10-09T09:59:59.000000+00:00'), true);
+  assert.equal(isConversationUnread(base, me, '2026-10-09T10:00:01.000000+00:00'), false);
+  // Your own last message, an empty conversation and an unchecked cursor are never unread.
+  assert.equal(isConversationUnread({ ...base, last_message_sender_id: me }, me, null), false);
+  assert.equal(isConversationUnread({ ...base, last_message_at: null }, me, null), false);
+  assert.equal(isConversationUnread(base, me, undefined), false);
+  assert.equal(isConversationUnread(base, me, 'not a date'), false);
+  // A deleted sender's last message still counts as theirs.
+  assert.equal(isConversationUnread({ ...base, last_message_sender_id: null }, me, null), true);
+  assert.deepEqual(readCursorsFor(['a', 'b'], [{ conversation_id: 'b', last_read_at: 'x' }]), { a: null, b: 'x' });
+  const service = read('../src/features/chat/service.ts');
+  assert.match(service, /from\('conversation_reads'\)\.select\('conversation_id,last_read_at'\)\.in\('conversation_id', ids\)/);
+  assert.doesNotMatch(read('../src/features/chat/conversation-row.tsx'), /unreadCount/);
+});
+
+// --- Message bubbles ------------------------------------------------------------------
+
+test('consecutive messages from one sender form a group', async () => {
+  const { messageGroupPosition, MESSAGE_GROUP_WINDOW_MS } = await import('../src/features/chat/chat.ts');
+  const at = (minute, second = 0) => new Date(2026, 9, 10, 10, minute, second).toISOString();
+  // Newest first, as the list holds them.
+  const items = [
+    { sender_id: 'me', created_at: at(9) },          // 0: alone
+    { sender_id: 'them', created_at: at(8, 30) },    // 1: end of a group of three
+    { sender_id: 'them', created_at: at(8) },        // 2: middle
+    { sender_id: 'them', created_at: at(7) },        // 3: start
+    { sender_id: 'me', created_at: at(6) },          // 4: end of a group of two
+    { sender_id: 'me', created_at: at(5) },          // 5: start
+    { sender_id: 'me', created_at: at(5 - 1 - MESSAGE_GROUP_WINDOW_MS / 60_000) }, // 6: too long before
+    { sender_id: null, created_at: at(-20) },        // 7: a deleted sender, alone
+  ];
+  const positions = items.map((_, index) => messageGroupPosition(items, index));
+  assert.deepEqual(positions.map(({ start, end }) => `${start ? 'S' : '-'}${end ? 'E' : '-'}`),
+    ['SE', '-E', '--', 'S-', '-E', 'S-', 'SE', 'SE']);
+  // A new day always starts a new group, even from the same sender a minute apart.
+  const midnight = [
+    { sender_id: 'me', created_at: new Date(2026, 9, 11, 0, 0, 30).toISOString() },
+    { sender_id: 'me', created_at: new Date(2026, 9, 10, 23, 59, 50).toISOString() },
+  ];
+  assert.deepEqual(messageGroupPosition(midnight, 0), { start: true, end: true });
+  assert.deepEqual(messageGroupPosition([{ sender_id: 'me', created_at: at(1) }], 0), { start: true, end: true });
+});
+
+test('text direction follows the first letter of the message', async () => {
+  const { isRightToLeft } = await import('../src/features/chat/chat.ts');
+  assert.equal(isRightToLeft('مرحبا، كيف حالك؟'), true);
+  assert.equal(isRightToLeft('שלום'), true);
+  assert.equal(isRightToLeft('123 ؟ مرحبا'), true);
+  assert.equal(isRightToLeft('Bonjour, ça va ?'), false);
+  assert.equal(isRightToLeft('Hello مرحبا'), false);
+  assert.equal(isRightToLeft('👍 12:30'), false);
+  assert.equal(isRightToLeft(''), false);
+});
+
+test('bubbles show the other student’s avatar once per group and never your own', () => {
+  const bubble = read('../src/features/chat/message-bubble.tsx');
+  // The avatar exists only in the incoming branch, beside the last message of a group.
+  assert.equal(bubble.match(/<UserAvatar\b/g).length, 1);
+  assert.match(bubble, /\{mine \? <View[\s\S]*?<\/View> : <View className="flex-row items-end gap-2">/);
+  assert.match(bubble, /<View className=\{cn\('w-7', showStatus && 'pb-5'\)\}>\s*\{group\.end \? <UserAvatar name=\{sender\.name\} uri=\{sender\.avatarUrl\} size="sm" \/> : null\}/);
+  assert.match(bubble, /const showStatus = group\.end \|\| pending \|\| failed \|\| receipt !== null;/);
+  // 2px inside a group, 16px between groups.
+  assert.match(bubble, /group\.start \? 'pt-4' : 'pt-0\.5'/);
+  // Bubbles are capped in width and may shrink, so long text wraps instead of overflowing.
+  assert.match(bubble, /max-w-\[82%\] rounded-lg bg-primary/);
+  assert.match(bubble, /max-w-\[82%\] rounded-lg bg-muted/);
+  // The beak: the last bubble of a group points at its sender.
+  assert.match(bubble, /group\.end && 'rounded-br-beak'/);
+  assert.match(bubble, /group\.end && 'rounded-bl-beak'/);
+  const screen = read('../src/features/chat/chat-screen.tsx');
+  // A message from a deleted account shows nothing of the former profile.
+  assert.match(screen, /sender=\{item\.sender_id === null \? deletedSender : sender\}/);
+  assert.match(screen, /const deletedSender = \{ name: DELETED_STUDENT, avatarUrl: null \};/);
 });

@@ -3,25 +3,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { FeedSkeleton } from '@/features/posts/feed-list';
 
-// Figma "State · Loading profile": the profile skeleton card, the tab strip and
-// one post skeleton.
+// A profile while it loads: the centred identity block, the tab strip and one post,
+// each with its final geometry.
 export function ProfileSkeleton({ message }: { message: string }) {
-  return <View className="gap-5 px-4 pt-4" accessibilityLabel="Loading profile" accessibilityState={{ busy: true }}>
-    <Text variant="caption" className="px-1 text-muted-foreground">{message}</Text>
-    <View className="gap-[18px] rounded-lg bg-card p-4">
-      <View className="flex-row items-center gap-3">
-        <Skeleton className="size-20 rounded-full" />
-        <View className="gap-2"><Skeleton className="h-3 w-[134px] rounded-full" /><Skeleton className="h-2.5 w-[90px] rounded-full" /></View>
-      </View>
-      <Skeleton className="h-3 w-[88%] rounded-full" />
+  return <View accessibilityLabel="Loading profile" accessibilityState={{ busy: true }}>
+    <Text variant="caption" className="px-5 text-center text-muted-foreground">{message}</Text>
+    <View className="items-center gap-3 px-6 pb-6 pt-4">
+      <Skeleton className="size-24 rounded-full" />
+      <Skeleton className="h-5 w-40 rounded-full" />
+      <Skeleton className="h-3 w-24 rounded-full" />
+      <Skeleton className="h-3 w-56 rounded-full" />
       <Skeleton className="h-3 w-[79%] rounded-full" />
-      <Skeleton className="h-3 w-[58%] rounded-full" />
-      <Skeleton className="h-12 w-[94%]" />
-      <Skeleton className="h-12 w-[94%]" />
+      <Skeleton className="h-12 w-full" />
     </View>
-    <View className="flex-row gap-1">
-      <View className="h-0.5 flex-1 bg-primary" /><View className="h-0.5 flex-1 bg-border" />
-    </View>
+    <View className="h-11 border-b border-divider" />
     <FeedSkeleton count={1} />
   </View>;
 }
