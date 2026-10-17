@@ -436,11 +436,12 @@ database only. Nothing below has been run on a device.
 
 - [x] Automated PASS (2026-10-12, disposable database): `bash tests/groups-db-verify.sh` (137 + 105 assertions, 63 concurrency checks, two rollback rehearsals) and `bash tests/chat-db-verify.sh` with all three group migrations applied.
 
-BLOCKED until `20261014090000_groups_roles_and_moderation.sql` is applied to the hosted
-project; it is NOT applied. Accounts needed: an owner (O), two more students (A, B), and
-ideally a fourth (C). Until the migration is applied only the first item can be run.
+`20261014090000_groups_roles_and_moderation.sql` was applied to the hosted project on
+2026-10-17 (`docs/groups-roles.md`, "Hosted deployment"), so everything below can now be
+run. Accounts needed: an owner (O), two more students (A, B), and ideally a fourth (C).
+Use the installed development APK with `npx expo start`; no new build is needed.
 
-- [ ] DEFERRED: Before the migration is applied, Groups behaves exactly as in Sprint 7A: no Manage buttons, no "Edit group", "Banned students" or "Admin history" rows.
+- [ ] SUPERSEDED: Before the migration is applied, Groups behaves exactly as in Sprint 7A. The migration is now applied, so this can no longer be run.
 
 Roles and badges
 - [ ] DEFERRED: O opens Members, taps the More button beside A, and sees "Make admin", "Remove from group" and "Ban from group". There is no More button beside O's own row.

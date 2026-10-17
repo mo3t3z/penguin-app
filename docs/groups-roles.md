@@ -306,12 +306,28 @@ transfers that already happened are not undone.
 ## Android acceptance
 
 Listed in `docs/android-acceptance-checklist.md` under "Sprint 7B: Group membership and
-roles". Every item is DEFERRED and BLOCKED until the migration is applied.
+roles". The migration is applied, so every item can now be run; all are DEFERRED.
+
+## Hosted deployment
+
+Applied to `utdwgmvdhghmephbvxvj` on 2026-10-17 with the procedure above:
+
+- `bash tests/groups-db-verify.sh` and `bash tests/chat-db-verify.sh` passed on the file.
+- Encrypted backups taken and verified: prefix
+  `penguin-utdwgmvdhghmephbvxvj-20261017T031522Z` (schema sha256 `2ea79f2f…1d380`,
+  data sha256 `705d73d6…2014a`).
+- `20261014090000` was the sole pending version; the dry run named only that file.
+- After `npx supabase db push --linked`: the version is recorded as applied; RLS is on
+  for `group_bans` and `group_admin_events`; `anon` and `authenticated` hold no table
+  privilege on them; `anon` can execute none of the nine new functions and
+  `authenticated` can execute all nine; the role check allows `owner`, `admin` and
+  `member`; row counts are unchanged (16 profiles, 8 conversations, 25 messages,
+  1 group, 7 members) and no ban or event exists.
 
 ## Outstanding approvals
 
-1. **Deployment** of `20261014090000_groups_roles_and_moderation.sql` to the hosted
-   project.
+1. ~~**Deployment** of `20261014090000_groups_roles_and_moderation.sql` to the hosted
+   project.~~ Done on 2026-10-17; see "Hosted deployment".
 2. **Block immunity.** Not implemented, because every way to close it changes either
    the blocking privacy policy or who may remove whom. Options:
 
@@ -328,5 +344,4 @@ roles". Every item is DEFERRED and BLOCKED until the migration is applied.
 3. **The inferred rules** listed under "Rules worth stating exactly" and "Known
    limitations": no bans in advance; admins lift only their own member bans; the removal
    limit is per actor across groups and counts bans; admins see moderation events only.
-4. **Commit.** Sprint 7A and 7B, including the two deployed migrations, are still
-   uncommitted.
+4. ~~**Commit.**~~ Sprint 7A and 7B are committed (`3bbdb9b`).
