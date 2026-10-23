@@ -5,7 +5,9 @@ import { ActivityIndicator, Platform, Pressable } from 'react-native';
 import { colors } from '@/theme/tokens';
 import { usePenguinTheme } from '@/theme/provider';
 
-// 48px high (compact 40 for header actions, with hitSlop to 48), 14px corners.
+// 48px high (compact 40 for header actions, with hitSlop to 48), 8px corners.
+// The primary button is ink (`foreground`, inverted in dark), not blue: Nabd keeps
+// blue for what is active or new.
 // One `default` (primary) button per screen marks its main action; `outline` is for
 // secondary actions, `ghost` and `link` for inline ones, `destructive` only inside
 // menus and dialogs.
@@ -19,7 +21,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: cn('bg-primary active:bg-primary-pressed', Platform.select({ web: 'hover:bg-primary-pressed' })),
+        default: cn('bg-foreground active:opacity-90', Platform.select({ web: 'hover:opacity-90' })),
         destructive: cn('active:bg-muted', Platform.select({ web: 'hover:bg-muted' })),
         outline: cn('border-input active:bg-muted border-1.5', Platform.select({ web: 'hover:bg-muted' })),
         secondary: cn('border-input active:bg-muted border-1.5', Platform.select({ web: 'hover:bg-muted' })),
@@ -52,7 +54,7 @@ const buttonTextVariants = cva(
   {
     variants: {
       variant: {
-        default: 'text-primary-foreground',
+        default: 'text-background',
         destructive: 'text-destructive',
         outline: 'text-foreground',
         secondary: 'text-foreground',
@@ -84,7 +86,7 @@ const compactHitSlop = { top: 4, bottom: 4 };
 function Button({ className, variant, size, loading = false, disabled, children, hitSlop, ...props }: ButtonProps) {
   const { scheme } = usePenguinTheme();
   const kind = variant ?? 'default';
-  const spinnerColor = kind === 'default' ? colors[scheme]['primary-foreground'] : kind === 'destructive' ? colors[scheme].destructive : kind === 'ghost' || kind === 'link' ? colors[scheme]['primary-text'] : colors[scheme].foreground;
+  const spinnerColor = kind === 'default' ? colors[scheme].background : kind === 'destructive' ? colors[scheme].destructive : kind === 'ghost' || kind === 'link' ? colors[scheme]['primary-text'] : colors[scheme].foreground;
   // Disabled buttons with a fill or outline become `muted` with a `disabled-foreground`
   // label; text-only ones fade. Loading keeps the action colour.
   const filledDisabled = Boolean(disabled) && !loading && size !== 'icon' && (kind === 'default' || kind === 'outline' || kind === 'secondary');

@@ -1,45 +1,46 @@
-// Warm Minimal Social palette, from the Penguin design system (tokens.json): warm
-// paper and warm night surfaces with Volcanic Orange (#FF7A00) as a fill. Text on
-// orange is `primary-foreground`, orange you read is `primary-text`, and every text
-// pair keeps WCAG AA contrast (tests/theme-contrast.test.mjs).
+// Nabd "Blueberry Refined" palette, from the Nabd design system (tokens.json):
+// white and soft-gray surfaces, ink text and one blueberry blue (#4263C7) for what
+// is active or new. Text on blue is `primary-foreground`, blue you read is
+// `primary-text` (it lightens in dark), and every text pair keeps WCAG AA contrast
+// (tests/theme-contrast.test.mjs).
 //
 // Eight-digit values carry alpha. NativeWind's RGB variables cannot hold them, so
 // they have no Tailwind class: apply them with `style` (see `alphaColorTokens`).
 export const colors = {
   light: {
-    background: '#FAF7F2', card: '#FFFFFF', 'surface-raised': '#FFFFFF',
-    'nav-surface': '#FFFFFFE0', 'nav-surface-solid': '#FFFFFFF5', 'nav-label': '#554D45',
-    'nav-border': '#1C17121A', 'nav-active': '#1C171212', muted: '#F3EEE7',
-    foreground: '#1C1712', 'muted-foreground': '#6A6158', primary: '#FF7A00',
-    'primary-foreground': '#1C1712', 'primary-pressed': '#E56D00', 'primary-text': '#A84B00',
-    accent: '#FFF0E1', 'accent-foreground': '#8A3D00', secondary: '#F3EEE7',
-    'secondary-foreground': '#1C1712', border: '#ECE5DC', divider: '#ECE5DC',
-    input: '#8C8177', focus: '#B35300', ring: '#B35300', skeleton: '#EDE6DD',
-    'disabled-foreground': '#8C8177', success: '#1F7A4D', 'success-surface': '#E6F4EC',
-    warning: '#8A5A00', 'warning-surface': '#FFF3D6', destructive: '#C0264F',
-    'destructive-foreground': '#FFFFFF', 'destructive-surface': '#FCE8EE', info: '#2F5FD0',
-    'info-surface': '#E8EEFC', overlay: '#1C171266',
+    background: '#FFFFFF', card: '#F5F6FA', 'surface-raised': '#FFFFFF',
+    'nav-surface': '#FFFFFFE6', 'nav-surface-solid': '#FFFFFFF5', 'nav-label': '#5D667A',
+    'nav-border': '#17203314', 'nav-active': '#17203312', muted: '#F5F6FA',
+    foreground: '#172033', 'muted-foreground': '#5D667A', primary: '#4263C7',
+    'primary-foreground': '#FFFFFF', 'primary-pressed': '#344FA8', 'primary-text': '#4263C7',
+    accent: '#F2F5FD', 'accent-foreground': '#344FA8', secondary: '#F5F6FA',
+    'secondary-foreground': '#172033', border: '#E5E7EB', divider: '#E5E7EB',
+    input: '#7C8497', focus: '#4263C7', ring: '#4263C7', skeleton: '#ECEEF3',
+    'disabled-foreground': '#7C8497', success: '#067647', 'success-surface': '#ECFDF3',
+    warning: '#B54708', 'warning-surface': '#FFFAEB', destructive: '#B42318',
+    'destructive-foreground': '#FFFFFF', 'destructive-surface': '#FEF3F2', info: '#4263C7',
+    'info-surface': '#F2F5FD', overlay: '#09090973',
   },
   dark: {
-    background: '#15120F', card: '#1E1A16', 'surface-raised': '#2B2620',
-    'nav-surface': '#2B2620E0', 'nav-surface-solid': '#2B2620F5', 'nav-label': '#C4BBB1',
-    'nav-border': '#FFFFFF1A', 'nav-active': '#FFFFFF1F', muted: '#27221D',
-    foreground: '#F6F1EA', 'muted-foreground': '#ADA399', primary: '#FF7A00',
-    'primary-foreground': '#1C1712', 'primary-pressed': '#E56D00', 'primary-text': '#FF9A3D',
-    accent: '#3A230F', 'accent-foreground': '#FFC08A', secondary: '#27221D',
-    'secondary-foreground': '#F6F1EA', border: '#332C25', divider: '#332C25',
-    input: '#7F7469', focus: '#FFA552', ring: '#FFA552', skeleton: '#2A2420',
-    'disabled-foreground': '#7F7469', success: '#6FD79F', 'success-surface': '#12291C',
-    warning: '#F2C66D', 'warning-surface': '#302410', destructive: '#FF8FA8',
-    'destructive-foreground': '#2A0A12', 'destructive-surface': '#3A1520', info: '#9DB8FF',
-    'info-surface': '#18213A', overlay: '#000000A6',
+    background: '#090909', card: '#1C1C1C', 'surface-raised': '#1C1C1C',
+    'nav-surface': '#1C1C1CE6', 'nav-surface-solid': '#1C1C1CF5', 'nav-label': '#A9ACBA',
+    'nav-border': '#FFFFFF1A', 'nav-active': '#FFFFFF1F', muted: '#1C1C1C',
+    foreground: '#F1F3FF', 'muted-foreground': '#A9ACBA', primary: '#4263C7',
+    'primary-foreground': '#FFFFFF', 'primary-pressed': '#344FA8', 'primary-text': '#8AA0EC',
+    accent: '#151A2B', 'accent-foreground': '#8AA0EC', secondary: '#1C1C1C',
+    'secondary-foreground': '#F1F3FF', border: '#303039', divider: '#303039',
+    input: '#7A7F8F', focus: '#8AA0EC', ring: '#8AA0EC', skeleton: '#242428',
+    'disabled-foreground': '#7A7F8F', success: '#47CD89', 'success-surface': '#0E2A1C',
+    warning: '#FDB022', 'warning-surface': '#2E2108', destructive: '#F97066',
+    'destructive-foreground': '#090909', 'destructive-surface': '#2D1412', info: '#8AA0EC',
+    'info-surface': '#151A2B', overlay: '#000000A6',
   },
 } as const;
 
 export const alphaColorTokens = ['nav-surface', 'nav-surface-solid', 'nav-border', 'nav-active', 'overlay'] as const;
 
-// The in-app wordmark: ink on paper. Its dot is `primary`.
-export const brand = { wordmark: { light: '#1C1712', dark: '#F6F1EA' } } as const;
+// The in-app wordmark: ink on white. Its dot is `primary`.
+export const brand = { wordmark: { light: '#172033', dark: '#F1F3FF' } } as const;
 
 export type ColorToken = keyof typeof colors.light;
 // Tokens with a Tailwind class and an opaque value, safe for icons and native props.
@@ -47,7 +48,7 @@ export type SolidColorToken = Exclude<ColorToken, typeof alphaColorTokens[number
 export const spacing = [4, 8, 12, 16, 20, 24, 32, 40, 48] as const;
 // `beak` is the one tight corner that points at the source: last bubble of a group,
 // the Create tile and the send button. Nowhere else.
-export const radius = { beak: 6, sm: 10, md: 14, lg: 20, xl: 24, full: 9999 } as const;
+export const radius = { beak: 4, sm: 6, md: 8, lg: 10, xl: 14, full: 9999 } as const;
 export const avatarSizes = { xs: 24, sm: 28, md: 40, lg: 48, xl: 96 } as const;
 export const iconSizes = { sm: 16, md: 20, lg: 24 } as const;
 export const layout = {
@@ -60,8 +61,8 @@ export const motion = { quick: 120, standard: 180, gentle: 240 } as const;
 // dialogs and toasts, `sheet` for bottom sheets. Apply with shadowStyle() from
 // src/theme/shadow.ts.
 export const shadows = {
-  raised: { elevation: 6, light: '0 8px 24px rgba(28, 23, 18, 0.10)', dark: '0 8px 24px rgba(0, 0, 0, 0.45)' },
-  sheet: { elevation: 12, light: '0 -8px 32px rgba(28, 23, 18, 0.18)', dark: '0 -8px 32px rgba(0, 0, 0, 0.5)' },
+  raised: { elevation: 6, light: '0 16px 40px rgba(23, 32, 51, 0.12)', dark: '0 8px 24px rgba(0, 0, 0, 0.45)' },
+  sheet: { elevation: 12, light: '0 -16px 40px rgba(23, 32, 51, 0.12)', dark: '0 -8px 32px rgba(0, 0, 0, 0.5)' },
 } as const;
 // Loaded at startup in the root layout; names match the Tailwind font-family utilities.
 // The design system specifies Readex Pro; Inter stays until that dependency is approved.

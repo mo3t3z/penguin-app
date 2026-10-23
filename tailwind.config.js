@@ -9,12 +9,12 @@ module.exports = {
   theme: {
     extend: {
       colors: Object.fromEntries(names.map(name => [name, `rgb(var(--${name}) / <alpha-value>)`])),
-      // 14px controls and media, 20px bubbles and floating layers, 24px pill composer.
+      // Nabd radii: 6px inputs and chips, 8px buttons, 10px cards, 14px sheet tops.
       // `beak` is the one tight corner on the last bubble, Create tile and send button.
       // 72px rows and empty-state circles; 1.5px control outlines.
       spacing: { 18: '72px' },
       borderWidth: { 1.5: '1.5px' },
-      borderRadius: { beak: '6px', sm: '10px', md: '14px', lg: '20px', xl: '24px' },
+      borderRadius: { beak: '4px', sm: '6px', md: '8px', lg: '10px', xl: '14px' },
       // Each Inter weight is its own family on Android, so weights are chosen with
       // these utilities instead of font-medium/font-semibold/font-bold.
       fontFamily: {
