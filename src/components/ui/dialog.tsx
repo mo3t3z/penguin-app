@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Modal, Pressable, View } from 'react-native';
-import { usePenguinTheme } from '@/theme/provider';
+import { usePenguinTheme, ThemeScope } from '@/theme/provider';
 import { colors } from '@/theme/tokens';
 import { shadowStyle } from '@/theme/shadow';
 import { Text } from './text';
@@ -15,7 +15,7 @@ export function Dialog({ visible, title, description, actions, onClose }: {
   onClose: () => void;
 }) {
   const { scheme } = usePenguinTheme();
-  return <Modal visible={visible} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+  return <Modal visible={visible} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}><ThemeScope>
     <View className="flex-1 items-center justify-center p-6">
       <Pressable className="absolute inset-0" style={{ backgroundColor: colors[scheme].overlay }} accessibilityLabel="Close" onPress={onClose} />
       <View className="w-full max-w-sm gap-3 rounded-lg bg-surface-raised p-6" style={shadowStyle('raised', scheme)} accessibilityViewIsModal role="alertdialog">
@@ -24,5 +24,5 @@ export function Dialog({ visible, title, description, actions, onClose }: {
         <View className="flex-row flex-wrap justify-end gap-2 pt-2">{actions}</View>
       </View>
     </View>
-  </Modal>;
+  </ThemeScope></Modal>;
 }

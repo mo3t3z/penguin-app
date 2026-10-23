@@ -43,6 +43,7 @@ Each sprint has three separate statuses.
 | 7B | Group roles and moderation | IMPLEMENTED LOCALLY | VERIFIED 2026-10-17; applied 2026-10-17 (`20261014090000`) | 0 / 0 / 40 (+1 SUPERSEDED); automated DB run PASS 2026-10-12 | `groups-roles.md` |
 | 7C | Group feed | PLANNED / SCOPE NOT YET APPROVED | — | — | None |
 | 7D | Group discovery and reports | PLANNED / SCOPE NOT YET APPROVED | — | — | None |
+| 8A | Profile redesign and connections | IMPLEMENTED LOCALLY (branch `feat/design-system-v2`) | VERIFIED 2026-10-23; applied 2026-10-23 with user approval (`20261023090000`, `20261023100000`) | 0 / 0 / 0, no checklist section yet; automated DB run PASS 2026-10-23 | `profile-connections.md` |
 | 8 | Notifications | PLANNED / SCOPE NOT YET APPROVED | — | — | None |
 | 9 | Settings and privacy | PLANNED / SCOPE NOT YET APPROVED | — | — | None |
 | 10 | Testing, security and Android beta | PLANNED / SCOPE NOT YET APPROVED | — | — | None |
@@ -85,7 +86,8 @@ migration history; it does not inspect the schema itself.
 3. **Sprint 7B inferred rules** (no bans in advance, admins lift only their own member
    bans, per-actor removal limit, admins see moderation events only): awaiting approval.
 4. **Scopes for 6C, 7C, 7D, 8, 9 and 10**: none written or approved.
-5. ~~**Hosted verification**~~: done on 2026-10-17; see "Hosted verification".
+5. ~~**Sprint 8A photos**~~: `20261023100000` applied 2026-10-23.
+6. ~~**Hosted verification**~~: done on 2026-10-17; see "Hosted verification".
 
 ## Security risks on record
 

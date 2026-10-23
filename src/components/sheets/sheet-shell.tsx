@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Text } from '@/components/ui/text';
-import { usePenguinTheme } from '@/theme/provider';
+import { usePenguinTheme, ThemeScope } from '@/theme/provider';
 import { colors } from '@/theme/tokens';
 import { shadowStyle } from '@/theme/shadow';
 
@@ -57,7 +57,7 @@ export function SheetShell({ visible, children, ...sheet }: PropsWithChildren<Sh
     statusBarTranslucent
     navigationBarTranslucent
     onRequestClose={sheet.onClose}
-  >
+  ><ThemeScope>
     {visible ? <SheetBody {...sheet}>{children}</SheetBody> : null}
-  </Modal>;
+  </ThemeScope></Modal>;
 }

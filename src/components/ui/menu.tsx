@@ -1,6 +1,6 @@
 import { ActivityIndicator, Modal, Pressable, View } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
-import { usePenguinTheme } from '@/theme/provider';
+import { usePenguinTheme, ThemeScope } from '@/theme/provider';
 import { colors } from '@/theme/tokens';
 import { shadowStyle } from '@/theme/shadow';
 import { Icon } from './icon';
@@ -21,7 +21,7 @@ export function Menu({ visible, items, top, right = 8, onClose }: {
   onClose: () => void;
 }) {
   const { scheme } = usePenguinTheme();
-  return <Modal visible={visible} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+  return <Modal visible={visible} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}><ThemeScope>
     <Pressable className="absolute inset-0" accessibilityLabel="Close menu" onPress={onClose} />
     <View
       className="absolute w-56 rounded-lg border border-border bg-surface-raised p-1.5"
@@ -47,5 +47,5 @@ export function Menu({ visible, items, top, right = 8, onClose }: {
         </Pressable>;
       })}
     </View>
-  </Modal>;
+  </ThemeScope></Modal>;
 }

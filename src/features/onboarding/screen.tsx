@@ -153,7 +153,7 @@ export function OnboardingScreen({ profile }: { profile: Profile }) {
           {error ? <Text className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
           <View className="gap-3">
             <Button loading={busy} disabled={!canContinueStep(step, selections)} onPress={() => void (review ? complete() : next())}>
-              {review && !busy ? <Icon as={ArrowRight} size={20} color="primary-foreground" /> : null}
+              {review && !busy ? <Icon as={ArrowRight} size={20} color="background" /> : null}
               <Text>{primaryActionLabel(step, busy)}</Text>
             </Button>
             {review ? <Button variant="secondary" disabled={busy} onPress={() => move(1)}><Text>Edit my details</Text></Button> : null}

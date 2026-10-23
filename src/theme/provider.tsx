@@ -37,3 +37,10 @@ export function PenguinThemeProvider({ children }: React.PropsWithChildren) {
 }
 
 export const usePenguinTheme = () => React.useContext(ThemeContext);
+
+// A Modal renders outside the provider's View on web, so its contents lose the
+// theme's colour variables. Wrap a modal's contents in this to bring them back.
+export function ThemeScope({ children }: React.PropsWithChildren) {
+  const { scheme } = usePenguinTheme();
+  return <View style={[{ flex: 1 }, themeVariables[scheme]]}>{children}</View>;
+}

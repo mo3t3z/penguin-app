@@ -12,8 +12,8 @@ auth controls, so they can later be reused in a public profile screen. No public
 fake social statistics, email, user IDs or auth metadata are presented. Current-user
 controls live in the account route. Settings is deferred rather than adding an inert link.
 
-Existing avatar primitives display the stored image URL, with an initials fallback
-for missing/failed images. No fake URL, upload control or storage infrastructure is added.
+Existing avatar primitives display the stored image URL, with the shared default
+avatar (`assets/default-avatar.webp`) for missing/failed images. No fake URL, upload control or storage infrastructure is added.
 Empty bio invites the owner to add one. Missing reference records get readable labels;
 reference lookup failures show retry without hiding the profile identity.
 
@@ -50,7 +50,7 @@ routes through the existing guards. Logout uses the existing service and provide
 ## Manual device QA — not executed by the agent
 
 1. Open Profile with a completed user. Confirm existing name, username, institution,
-   field and study level; no email/UUID/statistics. Confirm initials and the empty-bio
+   field and study level; no email/UUID/statistics. Confirm the default avatar and the empty-bio
    invitation when appropriate.
 2. Open Edit Profile. Confirm current values are prefilled, including full institution
    and field names. Change display name and bio, leave username unchanged, and Save.

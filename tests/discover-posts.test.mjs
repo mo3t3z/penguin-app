@@ -64,14 +64,14 @@ test('search results page with the same cursor as the feed', () => {
 
 test('Home and profile lists pass no search and keep their post-publish refresh', () => {
   const list = read('../src/features/posts/feed-list.tsx');
-  assert.match(list, /search = null, paused = false, underNavigation = false, scrollToTopSignal = 0 \}: FeedListProps/);
-  assert.match(list, /usePostsFeed\(\{ authorId, search \}\)/);
+  assert.match(list, /search = null, likedOnly = false, paused = false, underNavigation = false, scrollToTopSignal = 0 \}: FeedListProps/);
+  assert.match(list, /usePostsFeed\(\{ authorId, search, likedOnly \}\)/);
   assert.match(list,
     /if \(!userId \|\| event\.userId !== userId\) return;\s*if \(authorId && authorId !== userId\) return;\s*if \(search\) return;\s*list\.current\?\.scrollToOffset\(\{ offset: 0, animated: false \}\);\s*void refresh\(\);/);
   assert.doesNotMatch(read('../src/app/(protected)/(tabs)/home.tsx'), /search=|paused=/);
   assert.doesNotMatch(read('../src/features/profile/profile-screen.tsx'), /search=|paused=/);
   const hook = read('../src/features/posts/use-feed.ts');
-  assert.match(hook, /usePostsFeed\(\{ pageSize = 20, authorId = null, search = null \}/);
+  assert.match(hook, /usePostsFeed\(\{ pageSize = 20, authorId = null, search = null, likedOnly = false \}/);
 });
 
 test('a paused post list asks for no further pages and no image URLs', () => {

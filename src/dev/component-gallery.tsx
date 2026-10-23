@@ -45,6 +45,7 @@ const previewPost: FeedPost = {
 const previewProfile: PublicProfile = {
   id: 'preview-author', username: 'mayac', display_name: 'Maya Chen', avatar_url: null, institution_id: null, field_id: null,
   study_level: 'undergraduate', bio: 'CS student, curious builder. Usually in the library or turning an idea into a tiny app.',
+  cover_url: null, location: 'Sousse, Tunisia', interests: ['Computer Science', 'Web Development'], is_verified: false,
   created_at: '2026-09-15T12:00:00.000000+00:00',
 };
 const previewStudies = {
@@ -127,7 +128,7 @@ export default function ComponentGallery() {
             <View className="flex-row flex-wrap gap-3">
               {(['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] as const).map(variant => <Button key={variant} variant={variant} onPress={() => setPresses(value => value + 1)}><Text>{variant === 'default' ? 'Primary' : variant}</Text></Button>)}
               <Button disabled><Text>Disabled</Text></Button><Button loading accessibilityLabel="Loading preview"><Text>Loading</Text></Button>
-              <Button size="icon" accessibilityLabel="Try icon button" onPress={() => setPresses(value => value + 1)}><Icon as={ArrowUpRight} color="primary-foreground" /></Button>
+              <Button size="icon" accessibilityLabel="Try icon button" onPress={() => setPresses(value => value + 1)}><Icon as={ArrowUpRight} color="background" /></Button>
             </View>
             <View className="flex-row flex-wrap gap-3">{(['sm','default','lg'] as const).map(size => <Button key={size} size={size} variant="outline" onPress={() => setPresses(value => value + 1)}><Text>{size}</Text></Button>)}</View>
             <Text variant="muted" accessibilityLiveRegion="polite">Button presses: {presses}</Text>

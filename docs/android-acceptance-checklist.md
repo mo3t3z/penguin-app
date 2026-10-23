@@ -250,12 +250,12 @@ incoming messages, one time per group. Checked with `tsc`, `expo lint` and `npm 
 Nothing below has been run on a device.
 
 - [ ] DEFERRED: Your messages are orange, right-aligned, fully rounded, with no avatar; the time (and Sent/Read on the newest) is inside the bubble.
-- [ ] DEFERRED: The other student's messages are grey (Light) or charcoal (Dark), left-aligned, with their photo or initials at 32px.
+- [ ] DEFERRED: The other student's messages are grey (Light) or charcoal (Dark), left-aligned, with their photo, or the default avatar when they have none, at 32px.
 - [ ] DEFERRED: Several messages in a row from one sender sit close together, show one avatar beside the last of them and one time; all their bubbles share the same left edge.
 - [ ] DEFERRED: Spacing is visibly larger where the sender changes.
 - [ ] DEFERRED: A long message wraps; a very long unbroken string (a URL) wraps inside the bubble without horizontal scrolling, on a small screen too.
 - [ ] DEFERRED: An Arabic message is right-aligned inside its bubble; French and English are left-aligned; a mixed message follows its first letter.
-- [ ] DEFERRED: A message from a deleted student shows the "Deleted Student" initials, not a photo.
+- [ ] DEFERRED: A message from a deleted student shows the "Deleted Student" name with the default avatar, not a photo.
 - [ ] DEFERRED: The keyboard and composer behave as before with the new bubbles.
 
 

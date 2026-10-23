@@ -369,7 +369,8 @@ test('Messages is a tab, and opens from the navigation and from another studentâ
   const home = read('../src/app/(protected)/(tabs)/home.tsx');
   assert.doesNotMatch(home, /IconButton|Mail\b|\/messages/);
   const route = read('../src/app/(protected)/students/[id].tsx');
-  assert.match(route, /actions=\{profile\.id === viewerId \? undefined : <MessageStudentButton studentId=\{profile\.id\} \/>\}/);
+  assert.match(route, /actions=\{profile\.id === viewerId \? undefined : <View/);
+  assert.match(route, /<MessageStudentButton studentId=\{profile\.id\} compact \/>/);
   const button = read('../src/features/chat/message-student-button.tsx');
   assert.match(button, /router\.push\(\{ pathname: '\/messages\/\[conversationId\]', params: \{ conversationId \} \}\)/);
   // Only an identifier travels in the route; never message text.

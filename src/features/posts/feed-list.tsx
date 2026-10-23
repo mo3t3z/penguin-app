@@ -70,6 +70,8 @@ type FeedListProps = {
   onOpenAuthor?: (authorId: string) => void;
   // Limits the list to posts matching a canonical search key (Discover).
   search?: string | null;
+  // Limits the list to posts the signed-in user liked (own profile, Liked tab).
+  likedOnly?: boolean;
   // A hidden list keeps its posts and scroll position but asks for nothing: no
   // further pages and no image URLs.
   paused?: boolean;
@@ -80,7 +82,7 @@ type FeedListProps = {
   scrollToTopSignal?: number;
 };
 
-export function FeedList({ header, authorId = null, emptyState, replacement, onOpenAuthor, search = null, paused = false, underNavigation = false, scrollToTopSignal = 0 }: FeedListProps) {
+export function FeedList({ header, authorId = null, emptyState, replacement, onOpenAuthor, search = null, likedOnly = false, paused = false, underNavigation = false, scrollToTopSignal = 0 }: FeedListProps) {
   const reduceMotion = useReduceMotion();
   const navigationPadding = useNavContentPadding();
   const { session } = useAuth();
@@ -90,7 +92,7 @@ export function FeedList({ header, authorId = null, emptyState, replacement, onO
   const {
     status, items, nextCursor, loadingMore, error, errorKind,
     likesByPostId, commentCountsByPostId, refresh: refreshFeed, loadMore: loadMoreFeed, toggleLike,
-  } = usePostsFeed({ authorId, search });
+  } = usePostsFeed({ authorId, search, likedOnly });
   const [refreshing, setRefreshing] = useState(false);
   useEffect(() => {
     if (scrollToTopSignal) list.current?.scrollToOffset({ offset: 0, animated: !reduceMotion });

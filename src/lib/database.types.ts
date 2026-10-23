@@ -10,15 +10,25 @@ export type Profile = {
   field_id: string | null;
   study_level: StudyLevel | null;
   bio: string | null;
+  cover_url: string | null;
+  location: string | null;
+  interests: string[];
+  is_verified: boolean;
   onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
+};
+export type ConnectionStatus = 'pending' | 'accepted' | 'declined';
+export type Connection = {
+  user_low: string; user_high: string; requester_id: string; status: ConnectionStatus;
+  created_at: string; updated_at: string; responded_at: string | null;
 };
 export type Institution = {
   id: string; name: string; slug: string; country: string; city: string | null; created_at: string;
 };
 export type Field = { id: string; name: string; slug: string; created_at: string };
-export type ProfileUpdate = Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>;
+// is_verified is set by administrators only.
+export type ProfileUpdate = Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'is_verified'>>;
 
 export type Post = {
   id: string; author_id: string; client_request_id: string; content: string; created_at: string; updated_at: string;
@@ -180,6 +190,15 @@ export type Database = {
           { foreignKeyName: 'conversation_reads_conversation_id_fkey'; columns: ['conversation_id']; isOneToOne: false; referencedRelation: 'conversations'; referencedColumns: ['id'] },
         ];
       };
+      connections: {
+        Row: Connection;
+        Insert: never;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'connections_user_low_fkey'; columns: ['user_low']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+          { foreignKeyName: 'connections_user_high_fkey'; columns: ['user_high']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ];
+      };
       user_blocks: {
         Row: UserBlock;
         Insert: never;
@@ -251,6 +270,10 @@ export type Database = {
         Args: { p_message_id: string; p_conversation_id: string; p_content: string };
         Returns: MessageSendResult[];
       };
+      request_connection: { Args: { p_target: string }; Returns: 'pending' | 'accepted' };
+      respond_connection: { Args: { p_requester: string; p_accept: boolean }; Returns: 'accepted' | 'declined' };
+      remove_connection: { Args: { p_other: string }; Returns: undefined };
+      get_profile_stats: { Args: { p_profile: string }; Returns: { post_count: number; connection_count: number }[] };
       block_user: { Args: { p_blocked_id: string }; Returns: undefined };
       unblock_user: { Args: { p_blocked_id: string }; Returns: undefined };
       mark_conversation_read: { Args: { p_conversation_id: string }; Returns: undefined };

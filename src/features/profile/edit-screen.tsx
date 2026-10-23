@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, type PropsWithChildren, type ReactNode } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { BookOpen, Building2, ChevronDown, GraduationCap } from 'lucide-react-native';
+import { BookOpen, Building2, ChevronDown, GraduationCap, MapPin, Sparkles } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { InfoRow } from '@/components/forms/info-row';
 import { TopBar } from '@/components/navigation/top-bar';
@@ -16,7 +16,8 @@ import { Text } from '@/components/ui/text';
 import type { Profile, StudyLevel } from '@/lib/database.types';
 import { UsernameField } from '@/features/onboarding/username-field';
 import type { Selection } from '@/features/onboarding/search-selection';
-import { BIO_LIMIT, bioCounter, isBioTooLong, profileDisplayName } from './profile-format';
+import { BIO_LIMIT, bioCounter, isBioTooLong, MAX_INTERESTS, normalizeInterests, profileDisplayName } from './profile-format';
+import { Cover } from './profile-header';
 import { useProfile } from './provider';
 import { studyLevels } from './study-levels';
 import { checkUsernameAvailability, isValidUsername, normalizeUsername, updateCurrentProfile } from './service';
@@ -56,6 +57,8 @@ function EditForm({ profile, initialInstitution, initialField }: {
   const [displayName, setDisplayName] = useState(profile.display_name ?? '');
   const [username, setUsername] = useState(profile.username ?? '');
   const [bio, setBio] = useState(profile.bio ?? '');
+  const [location, setLocation] = useState(profile.location ?? '');
+  const [interests, setInterests] = useState((profile.interests ?? []).join(', '));
   const [institution, setInstitution] = useState(initialInstitution);
   const [field, setField] = useState(initialField);
   const [level, setLevel] = useState<StudyLevel | null>(profile.study_level);
@@ -80,6 +83,10 @@ function EditForm({ profile, initialInstitution, initialField }: {
     if (isBioTooLong(bio)) { setError('Keep your bio to 500 characters or fewer.'); return; }
     if (!institution || !field) { setError('Select an institution and field of study.'); return; }
     if (!level || !Object.hasOwn(studyLevels, level)) { setError('Select a valid study level.'); return; }
+    if (location.trim().length > 80) { setError('Keep your city to 80 characters or fewer.'); return; }
+    let interestList: string[];
+    try { interestList = normalizeInterests(interests.split(',')); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Check your interests.'); return; }
     inFlight.current = true; setBusy(true);
     let saved = false;
     try {
@@ -91,7 +98,8 @@ function EditForm({ profile, initialInstitution, initialField }: {
       }
       if (!mounted.current) return;
       const updated = await updateCurrentProfile({ display_name: name, username: canonical, bio: bio.trim() || null,
-        institution_id: institution.id, field_id: field.id, study_level: level });
+        institution_id: institution.id, field_id: field.id, study_level: level,
+        location: location.trim() || null, interests: interestList });
       saved = true;
       const current = await refresh();
       if (!current || current.id !== updated.id) throw new Error('Refresh incomplete');
@@ -106,6 +114,7 @@ function EditForm({ profile, initialInstitution, initialField }: {
   return <Frame onBack={cancel} action={<Button variant="ghost" size="sm" disabled={busy} accessibilityLabel="Save changes" onPress={() => void save()}>
     <Text>Save</Text>
   </Button>}>
+    <Cover uri={profile.cover_url} own inset={false} />
     <View className="items-center">
       <UserAvatar name={profileDisplayName(displayName)} uri={profile.avatar_url} size="xl" />
     </View>
@@ -116,6 +125,11 @@ function EditForm({ profile, initialInstitution, initialField }: {
       placeholder="Share what you’re studying, curious about or working toward."
       hint={bioCounter(bio)}
       error={isBioTooLong(bio) ? `${bioCounter(bio)}. Keep your bio to ${BIO_LIMIT} characters or fewer.` : undefined} />
+    <FormField label="City" leadingIcon={MapPin} value={location} onChangeText={setLocation} maxLength={80}
+      placeholder="Sousse, Tunisia" autoComplete="off" editable={!busy} />
+    <FormField label="Interests" leadingIcon={Sparkles} value={interests} onChangeText={setInterests}
+      placeholder="Web Development, Photography" autoCapitalize="words" editable={!busy}
+      hint={`Separate with commas. Up to ${MAX_INTERESTS}.`} />
     <Separator />
     <View className="gap-3">
       <Text variant="h4" accessibilityRole="header">Student details</Text>

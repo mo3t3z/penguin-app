@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Profile, ProfileUpdate } from '@/lib/database.types';
 import { requireUuid } from '@/features/posts/validation';
+import { normalizeCoverUrl, normalizeInterests } from './profile-format';
 
 function client() {
   if (!supabase) throw new Error('Profile data is not configured.');
@@ -23,9 +24,10 @@ export async function getCurrentProfile() {
 
 // What one student may see of another: presentation fields only, never account
 // state such as onboarding progress.
-const PUBLIC_PROFILE = 'id,username,display_name,avatar_url,institution_id,field_id,study_level,bio,created_at' as const;
+const PUBLIC_PROFILE = 'id,username,display_name,avatar_url,institution_id,field_id,study_level,bio,cover_url,location,interests,is_verified,created_at' as const;
 export type PublicProfile = Pick<Profile,
-  'id' | 'username' | 'display_name' | 'avatar_url' | 'institution_id' | 'field_id' | 'study_level' | 'bio' | 'created_at'>;
+  'id' | 'username' | 'display_name' | 'avatar_url' | 'institution_id' | 'field_id' | 'study_level' | 'bio'
+  | 'cover_url' | 'location' | 'interests' | 'is_verified' | 'created_at'>;
 
 // Read-only lookup for a student profile screen. Row-level security decides which
 // profiles the signed-in user can read; null means not found or not visible.
@@ -62,6 +64,9 @@ export async function updateCurrentProfile(input: ProfileUpdate) {
   if (input.institution_id !== undefined) patch.institution_id = input.institution_id;
   if (input.field_id !== undefined) patch.field_id = input.field_id;
   if (input.study_level !== undefined) patch.study_level = input.study_level;
+  if (input.cover_url !== undefined) patch.cover_url = normalizeCoverUrl(input.cover_url);
+  if (input.location !== undefined) patch.location = input.location?.trim() || null;
+  if (input.interests !== undefined) patch.interests = normalizeInterests(input.interests);
   if (input.onboarding_completed !== undefined) patch.onboarding_completed = input.onboarding_completed;
   if (!Object.keys(patch).length) throw new Error('No profile changes supplied.');
   const { data, error } = await client().from('profiles').update(patch).eq('id', id).select('*').single();

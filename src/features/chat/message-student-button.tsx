@@ -10,7 +10,8 @@ import { getOrCreateConversation } from './service';
 
 // The primary action on another student's profile. The database finds or creates the
 // conversation; a second tap while that is in progress does nothing.
-export function MessageStudentButton({ studentId }: { studentId: string }) {
+// `compact` is the small outline version that sits beside Connect in a profile header.
+export function MessageStudentButton({ studentId, compact = false }: { studentId: string; compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
@@ -26,9 +27,16 @@ export function MessageStudentButton({ studentId }: { studentId: string }) {
       inFlight.current = false; setBusy(false);
     }
   }
+  if (compact) return <View className="gap-1">
+    <Button variant="outline" size="sm" loading={busy} accessibilityLabel="Message this student" onPress={() => void open()}>
+      {busy ? null : <Icon as={MessageCircle} size={16} />}
+      <Text>Message</Text>
+    </Button>
+    {error ? <Text variant="caption" className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}
+  </View>;
   return <View className="gap-2">
     <Button loading={busy} accessibilityLabel="Message this student" onPress={() => void open()}>
-      {busy ? null : <Icon as={MessageCircle} size={20} color="primary-foreground" />}
+      {busy ? null : <Icon as={MessageCircle} size={20} color="background" />}
       <Text>Message</Text>
     </Button>
     {error ? <Text variant="caption" className="text-destructive" accessibilityLiveRegion="polite">{error}</Text> : null}

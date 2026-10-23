@@ -3,7 +3,7 @@ import { Ban, Crown, ShieldMinus, ShieldPlus, UserMinus, type LucideIcon } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { usePenguinTheme } from '@/theme/provider';
+import { usePenguinTheme, ThemeScope } from '@/theme/provider';
 import { colors } from '@/theme/tokens';
 import { shadowStyle } from '@/theme/shadow';
 import { adminActionCopy, type GroupAdminAction } from './groups';
@@ -25,7 +25,7 @@ export function MemberActionsSheet({ visible, name, actions, onChoose, onClose }
 }) {
   const insets = useSafeAreaInsets();
   const { scheme } = usePenguinTheme();
-  return <Modal visible={visible} transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
+  return <Modal visible={visible} transparent animationType="slide" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}><ThemeScope>
     <View className="flex-1 justify-end">
       <Pressable className="absolute inset-0" style={{ backgroundColor: colors[scheme].overlay }} role="button" accessibilityLabel="Close" onPress={onClose} />
       <View
@@ -51,5 +51,5 @@ export function MemberActionsSheet({ visible, name, actions, onChoose, onClose }
         })}
       </View>
     </View>
-  </Modal>;
+  </ThemeScope></Modal>;
 }

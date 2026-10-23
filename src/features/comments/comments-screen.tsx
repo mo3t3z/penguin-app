@@ -167,7 +167,7 @@ export function CommentsScreen({ postId }: { postId: string }) {
             accessibilityLabel={retrying ? 'Retry publishing comment' : 'Publish comment'}
             onPress={() => void submit()}
           >
-            <Icon as={Send} color="primary-foreground" />
+            <Icon as={Send} color="background" />
             <Text>{submitting ? 'Publishing…' : retrying ? 'Retry' : 'Comment'}</Text>
           </Button>
         </View>

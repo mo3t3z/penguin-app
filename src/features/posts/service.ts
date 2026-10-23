@@ -68,15 +68,18 @@ export async function getPost(id: string) {
 // posts; row-level security still decides which posts the caller may read.
 // With search (a canonical search key) only posts whose text contains every word
 // are returned, in the same order and with the same cursor.
-export async function getFeed({ cursor, limit = 20, signal, authorId, search }: {
+// With likedOnly only posts the caller liked are returned: like rows are readable
+// by their owner only, so the inner join keeps the caller's own likes.
+export async function getFeed({ cursor, limit = 20, signal, authorId, search, likedOnly = false }: {
   cursor?: FeedCursor;
   limit?: number;
   signal?: AbortSignal;
   authorId?: string | null;
   search?: string | null;
+  likedOnly?: boolean;
 } = {}) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error('Feed limit must be between 1 and 50.');
-  let query = client().from('posts').select(POST_CARD)
+  let query = client().from('posts').select(likedOnly ? `${POST_CARD},my_like:post_likes!inner(post_id)` : POST_CARD)
     .order('created_at', { ascending: false }).order('id', { ascending: false })
     .eq('media.status', 'ready')
     .order('position', { referencedTable: 'media' }).limit(limit + 1);
@@ -86,7 +89,21 @@ export async function getFeed({ cursor, limit = 20, signal, authorId, search }: 
   if (signal) query = query.abortSignal(signal);
   const { data, error } = await query;
   if (error) throw error;
-  return buildFeedPage(data as FeedPost[], limit);
+  return buildFeedPage((data as unknown as (FeedPost & { my_like?: unknown })[]).map(({ my_like: _, ...post }) => post), limit);
+}
+
+export type ProfileMediaItem = { id: string; postId: string; width: number | null; height: number | null };
+// One student's ready images, newest post first, for a profile's Media tab.
+export async function getProfileMedia(authorId: string, limit = 60): Promise<ProfileMediaItem[]> {
+  const { data, error } = await client().from('post_media')
+    .select('id,post_id,width,height,position,post:posts!inner(author_id,created_at)')
+    .eq('post.author_id', requireUuid(authorId)).eq('status', 'ready')
+    .order('created_at', { referencedTable: 'posts', ascending: false }).limit(limit);
+  if (error) throw error;
+  type Row = { id: string; post_id: string; width: number | null; height: number | null; position: number; post: { created_at: string } | null };
+  return ((data ?? []) as unknown as Row[])
+    .sort((a, b) => (b.post?.created_at ?? '').localeCompare(a.post?.created_at ?? '') || a.position - b.position)
+    .map(row => ({ id: row.id, postId: row.post_id, width: row.width, height: row.height }));
 }
 export async function updatePost(id: string, content: string) {
   const { data, error } = await client().from('posts').update({ content: normalizePostContent(content) })

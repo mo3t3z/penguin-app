@@ -71,10 +71,10 @@ test('author feed reuses the feed query with a validated author filter', () => {
 
 test('the feed hook passes the author through and keeps state scoped to the signed-in user', () => {
   const hook = read('../src/features/posts/use-feed.ts');
-  assert.match(hook, /getFeed\(\{ cursor, limit: pageSize, signal: controller\.signal, authorId, search \}\)/);
-  assert.match(hook, /\[authorId, enabled, pageSize, search, updateState, userId\]/);
+  assert.match(hook, /getFeed\(\{ cursor, limit: pageSize, signal: controller\.signal, authorId, search, likedOnly \}\)/);
+  assert.match(hook, /\[authorId, enabled, likedOnly, pageSize, search, updateState, userId\]/);
   // Home and the profile lists pass no search, so their requests are unfiltered.
-  assert.match(hook, /usePostsFeed\(\{ pageSize = 20, authorId = null, search = null \}/);
+  assert.match(hook, /usePostsFeed\(\{ pageSize = 20, authorId = null, search = null, likedOnly = false \}/);
   assert.match(hook, /const visible = enabled && state\.userId === userId \? state : initialFeedState\(\);/);
 });
 
@@ -82,7 +82,8 @@ test('profile lookup validates the id and selects presentation fields only', () 
   const service = read('../src/features/profile/service.ts');
   assert.match(service, /\.select\(PUBLIC_PROFILE\)\.eq\('id', requireUuid\(id\)\)\.maybeSingle\(\)/);
   const columns = service.match(/const PUBLIC_PROFILE = '([^']+)'/)[1].split(',');
-  assert.deepEqual(columns, ['id', 'username', 'display_name', 'avatar_url', 'institution_id', 'field_id', 'study_level', 'bio', 'created_at']);
+  assert.deepEqual(columns, ['id', 'username', 'display_name', 'avatar_url', 'institution_id', 'field_id', 'study_level', 'bio',
+    'cover_url', 'location', 'interests', 'is_verified', 'created_at']);
   assert.ok(!columns.includes('onboarding_completed'));
 });
 
@@ -164,10 +165,11 @@ test('a student profile is read-only and edit actions exist only on the Profile 
   const route = read('../src/app/(protected)/students/[id].tsx');
   assert.match(route, /own=\{false\}/);
   assert.doesNotMatch(route, /edit-profile|signOut|Log out|Edit Profile/);
-  // Message is the single action a student profile offers, and not on your own.
+  // Message and Connect are the actions a student profile offers, and not on your own.
   assert.deepEqual(route.match(/actions=\{.*/g), [
-    'actions={profile.id === viewerId ? undefined : <MessageStudentButton studentId={profile.id} />}',
+    'actions={profile.id === viewerId ? undefined : <View className="flex-row items-start gap-2">',
   ]);
+  assert.match(route, /<MessageStudentButton studentId=\{profile\.id\} compact \/>\s*<ConnectionButton viewerId=\{viewerId\} studentId=\{profile\.id\} \/>/);
   assert.match(route, /uuidPattern\.test\(params\.id\)/);
   const account = read('../src/app/(protected)/(tabs)/account.tsx');
   assert.match(account, /href="\/edit-profile"/);
