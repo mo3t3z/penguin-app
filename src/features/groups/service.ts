@@ -33,7 +33,7 @@ function client() {
 }
 
 // No member count here: it comes from viewerSummaries, with the viewer's role.
-const GROUP = 'id,name,description,status,created_at' as const;
+const GROUP = 'id,name,description,status,cover_url,created_at' as const;
 
 // For these groups: the actual member count, how many members are unavailable to
 // the signed-in student, and their own role. The database works all three out for
@@ -246,4 +246,10 @@ export async function listGroupAdminEvents({ groupId, cursor, limit = GROUP_MEMB
   const { data, error } = await request;
   if (error) throw error;
   return buildGroupEventPage(data, limit);
+}
+
+// Owner only, in an active group; null clears the cover.
+export async function setGroupCover(groupId: string, coverUrl: string | null) {
+  const { error } = await client().rpc('set_group_cover', { p_group_id: requireGroupUuid(groupId), p_cover_url: coverUrl });
+  if (error) throw error;
 }

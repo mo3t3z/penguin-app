@@ -87,7 +87,8 @@ migration history; it does not inspect the schema itself.
    bans, per-actor removal limit, admins see moderation events only): awaiting approval.
 4. **Scopes for 6C, 7C, 7D, 9 and 10**: none written or approved.
 5. ~~**Sprint 8A photos**~~: `20261023100000` applied 2026-10-23.
-6. ~~**Hosted verification**~~: done on 2026-10-17; see "Hosted verification".
+6. ~~**Group covers**~~: `20261024100000` applied 2026-10-24 with user approval (see `groups.md`).
+7. ~~**Hosted verification**~~: done on 2026-10-17; see "Hosted verification".
 
 ## Security risks on record
 

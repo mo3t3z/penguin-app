@@ -17,7 +17,7 @@ export const GROUP_ADMIN_LIMIT = 10;
 export const GROUP_REMOVALS_PER_HOUR = 20;
 
 // What the app reads of a group directly: never who created it, and no count.
-export type GroupRecord = Pick<Group, 'id' | 'name' | 'description' | 'status' | 'created_at'>;
+export type GroupRecord = Pick<Group, 'id' | 'name' | 'description' | 'status' | 'cover_url' | 'created_at'>;
 // A group as shown: with its actual number of members, the same for every viewer.
 export type GroupSummary = GroupRecord & { member_count: number };
 // unavailable_member_count is how many of those members this viewer cannot see. It

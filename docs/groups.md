@@ -722,3 +722,16 @@ Read-only checks after deployment:
 
 No data was created, changed or deleted. Not checked, because it needs a signed-in
 student: any request as `authenticated`. Those are the Android checks.
+
+## Group details redesign and covers (2026-10-24)
+
+- Group details follow the supplied mockup, left to right: cover, name, "Public group ·
+  N members", description, Join or Leave, then tabs Posts, About (default) and Members.
+- Posts shows "No group posts yet": posting in groups is Sprint 7C, not built.
+- Covers: migration `20261024100000_group_covers.sql` adds `groups.cover_url` (https)
+  and `set_group_cover(group, url)`, owner only in an active group, like editing the
+  name. The owner uploads to their own folder of the `profile-photos` bucket.
+- `bash tests/group-covers-db-verify.sh`: PASS on 2026-10-24, 9 assertions.
+- Hosted: applied 2026-10-24 with the user's approval by `supabase db push` (the dry
+  run listed it alone); read-only `supabase migration list --linked` shows it in both
+  columns.

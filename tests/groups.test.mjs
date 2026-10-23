@@ -518,7 +518,9 @@ test('the service never sends a creator, an owner or a role, and never reads hid
   assert.doesNotMatch(service, /creator_id|client_request_id|p_user|p_role|service_role/);
   assert.doesNotMatch(service, /\.(insert|update|upsert|delete)\(/);
   // The stored member count is never requested; counts come from the per-viewer function.
-  assert.match(service, /const GROUP = 'id,name,description,status,created_at' as const;/);
+  assert.match(service, /const GROUP = 'id,name,description,status,cover_url,created_at' as const;/);
+  // The cover is set through the owner-only function, never by writing the table.
+  assert.match(service, /rpc\('set_group_cover', \{ p_group_id: requireGroupUuid\(groupId\), p_cover_url: coverUrl \}\)/);
   assert.match(service, /rpc\('get_group_viewer_summaries', \{ p_group_ids: groupIds\.map\(requireGroupUuid\) \}\)/);
 });
 
@@ -569,7 +571,8 @@ test('Groups routes sit above the tabs and are reached from Discover', () => {
   }
   const discover = read('../src/features/discover/discover-screen.tsx');
   assert.match(discover, /router\.push\('\/groups'\)/);
-  assert.match(discover, /accessibilityLabel="Groups\. Find, join and create student groups"/);
+  assert.match(read('../src/features/discover/popular-groups.tsx'), /accessibilityLabel="See all groups" onPress=\{onSeeAll\}/);
+  assert.match(discover, /<PopularGroups onOpen=\{openGroup\} onSeeAll=\{openGroups\} \/>/);
   const list = feature['groups-screen.tsx'];
   assert.match(list, /router\.push\(\{ pathname: '\/groups\/\[id\]', params: \{ id: groupId \} \}\)/);
   assert.match(list, /router\.push\('\/groups\/new'\)/);

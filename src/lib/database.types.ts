@@ -100,6 +100,7 @@ export type Group = {
   description: string | null;
   visibility: 'public';
   status: GroupStatus;
+  cover_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -310,6 +311,7 @@ export type Database = {
       remove_group_member: { Args: { p_group_id: string; p_member_id: string }; Returns: boolean };
       ban_group_member: { Args: { p_group_id: string; p_member_id: string }; Returns: boolean };
       unban_group_member: { Args: { p_group_id: string; p_banned_id: string }; Returns: boolean };
+      set_group_cover: { Args: { p_group_id: string; p_cover_url: string | null }; Returns: string | null };
       update_group_details: {
         Args: { p_group_id: string; p_name: string; p_description: string | null };
         Returns: Pick<Group, 'id' | 'name' | 'description' | 'updated_at'>[];
