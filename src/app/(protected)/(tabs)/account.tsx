@@ -1,14 +1,12 @@
 import { useRef, useState } from 'react';
-import { View } from 'react-native';
 import { Link } from 'expo-router';
-import { Ellipsis, LogOut, Pencil } from 'lucide-react-native';
+import { LogOut, Menu as MenuIcon, Pencil } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { IconButton } from '@/components/ui/icon-button';
 import { Menu } from '@/components/ui/menu';
 import { Text } from '@/components/ui/text';
-import { RequestsBell } from '@/features/connections/requests-bell';
 import { useProfile } from '@/features/profile/provider';
 import { ProfileScreen } from '@/features/profile/profile-screen';
 import { ProfileStatus } from '@/features/profile/profile-status';
@@ -41,10 +39,7 @@ function OwnProfile({ profile }: { profile: Profile }) {
       actions={<Link href="/edit-profile" asChild>
         <Button variant="outline" size="sm" disabled={busy}><Icon as={Pencil} size={16} /><Text>Edit profile</Text></Button>
       </Link>}
-      headerAction={<View className="flex-row">
-        <RequestsBell />
-        <IconButton icon={Ellipsis} accessibilityLabel="More options" tinted={menuOpen} onPress={() => setMenuOpen(true)} />
-      </View>}
+      headerAction={<IconButton icon={MenuIcon} accessibilityLabel="More options" tinted={menuOpen} onPress={() => setMenuOpen(true)} />}
       notice={error ? <Text variant="callout" className="px-5 pb-2 text-destructive" accessibilityLiveRegion="polite">{error}</Text> : undefined}
       studies={{
         loading: references.loading, failed: references.failed, retry: references.retry,

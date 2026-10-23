@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { router, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBar } from '@/components/navigation/top-bar';
+import { NotificationsBell } from '@/features/notifications/notifications-bell';
 import { FeedList } from '@/features/posts/feed-list';
 import { ProfileStatus } from '@/features/profile/profile-status';
 import { useProfile } from '@/features/profile/provider';
@@ -33,7 +34,7 @@ function HomeFeed({ profile }: { profile: Profile }) {
     return tabs.addListener('tabPress', () => { if (tabs.isFocused()) setScrollToTop((value) => value + 1); });
   }, [navigation]);
   return <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-    <TopBar />
+    <TopBar actions={<NotificationsBell />} />
     <FeedList onOpenAuthor={openAuthor} underNavigation scrollToTopSignal={scrollToTop} />
   </SafeAreaView>;
 }

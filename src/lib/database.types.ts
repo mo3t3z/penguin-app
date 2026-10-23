@@ -19,6 +19,11 @@ export type Profile = {
   updated_at: string;
 };
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined';
+export type NotificationType = 'post_comment' | 'connection_comment' | 'connection_request' | 'connection_accepted' | 'connection_photo';
+export type AppNotification = {
+  id: string; recipient_id: string; actor_id: string | null; type: NotificationType;
+  post_id: string | null; comment_id: string | null; created_at: string; read_at: string | null;
+};
 export type Connection = {
   user_low: string; user_high: string; requester_id: string; status: ConnectionStatus;
   created_at: string; updated_at: string; responded_at: string | null;
@@ -190,6 +195,14 @@ export type Database = {
           { foreignKeyName: 'conversation_reads_conversation_id_fkey'; columns: ['conversation_id']; isOneToOne: false; referencedRelation: 'conversations'; referencedColumns: ['id'] },
         ];
       };
+      notifications: {
+        Row: AppNotification;
+        Insert: never;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: 'notifications_actor_id_fkey'; columns: ['actor_id']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+        ];
+      };
       connections: {
         Row: Connection;
         Insert: never;
@@ -270,6 +283,8 @@ export type Database = {
         Args: { p_message_id: string; p_conversation_id: string; p_content: string };
         Returns: MessageSendResult[];
       };
+      mark_notifications_read: { Args: { p_until?: string | null }; Returns: undefined };
+      get_unread_notification_count: { Args: Record<string, never>; Returns: number };
       request_connection: { Args: { p_target: string }; Returns: 'pending' | 'accepted' };
       respond_connection: { Args: { p_requester: string; p_accept: boolean }; Returns: 'accepted' | 'declined' };
       remove_connection: { Args: { p_other: string }; Returns: undefined };
