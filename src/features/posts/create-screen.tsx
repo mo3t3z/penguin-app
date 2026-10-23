@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   BackHandler,
   Keyboard,
   KeyboardAvoidingView,
@@ -21,6 +22,7 @@ import type { Profile } from '@/lib/database.types';
 import { usePenguinTheme } from '@/theme/provider';
 import { colors } from '@/theme/tokens';
 import { shadowStyle } from '@/theme/shadow';
+import { useSheetSwipe } from './use-sheet-swipe';
 import { processPostImage } from './image-processing';
 import {
   authorizePostImageUpload,
@@ -92,8 +94,9 @@ function imagePickerError(cause: unknown) {
 
 // Create is a full-height sheet above the tabs (see the `create-post` screen options
 // in src/app/(protected)/_layout.tsx): a raised surface from just under the status
-// bar, with a decorative handle. It cannot be dragged away, so a draft is never lost
-// to a swipe, and Cancel or the system Back asks before discarding one. One scroll
+// bar, with a handle. Swiping the handle or header down lowers the sheet, again
+// closes it; swiping up expands it. Closing by swipe, Cancel or the system Back asks
+// before discarding a draft, so a draft is never lost to a swipe. One scroll
 // view holds the author, the text and the photos; the toolbar stays pinned above
 // the keyboard.
 export function CreatePostScreen({ profile }: { profile: Profile }) {
@@ -132,6 +135,8 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
     if (inFlight.current) return;
     if (draftRef.current) { Keyboard.dismiss(); setConfirmDiscard(true); } else leave();
   }, [leave]);
+
+  const swipe = useSheetSwipe({ onClose: requestClose, disabled: busy });
 
   useFocusEffect(useCallback(() => {
     mounted.current = true;
@@ -275,12 +280,16 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
     {/* The one keyboard strategy for this screen, the same as in a conversation:
         "padding" pads by exactly what the keyboard covers on both platforms. */}
     <KeyboardAvoidingView className="flex-1" behavior="padding">
-      <View
+      <Animated.View
         className="w-full max-w-xl flex-1 self-center overflow-hidden rounded-t-lg bg-surface-raised"
-        style={shadowStyle('sheet', scheme)}
+        style={[shadowStyle('sheet', scheme), { transform: [{ translateY: swipe.translateY }] }]}
+        onLayout={(event) => swipe.onSheetLayout(event.nativeEvent.layout.height)}
         accessibilityViewIsModal
       >
-        <View className="mt-2 h-1 w-10 self-center rounded-full bg-border" aria-hidden />
+        <View {...swipe.panHandlers}>
+        <View className="items-center py-2" accessibilityHint="Swipe down to lower or close, up to expand">
+          <View className="h-1 w-10 rounded-full bg-border" aria-hidden />
+        </View>
         <View className="h-14 flex-row items-center justify-between px-2">
           <View className="absolute inset-0 items-center justify-center" pointerEvents="none">
             <Text className="text-body font-inter-semibold" role="heading">New post</Text>
@@ -294,6 +303,7 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
             onPress={() => void publish()}>
             <Text>{busy ? 'Posting…' : publishFailed ? 'Retry' : 'Post'}</Text>
           </Button>
+        </View>
         </View>
 
         <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
@@ -358,7 +368,7 @@ export function CreatePostScreen({ profile }: { profile: Profile }) {
             {length.toLocaleString()}/{POST_TEXT_LIMIT.toLocaleString()}
           </Text> : null}
         </View>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
     <Dialog
       visible={confirmDiscard}
